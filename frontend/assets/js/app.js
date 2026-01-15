@@ -1,13 +1,7 @@
 // frontend/assets/js/app.js
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+import { supabase } from './supabase.js';
 
-// Initialize Supabase
-const SUPABASE_URL = "https://mlmstxyixynfsbolgnxu.supabase.co";
-// WARNING: Using Service Key for demo purposes. In production, use the Anon Key.
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sbXN0eHlpeHluZnNib2xnbnh1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODIzMjk4NSwiZXhwIjoyMDgzODA4OTg1fQ.vi2gPU4mscqOOedCPKEorCXjSHjpxTVkZo_4Ke06XRg";
-
-// Create single instance
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Create single instance - REMOVED (imported above)
 
 const App = {
     // Auth State
@@ -45,7 +39,13 @@ const App = {
     // Auth Actions
     login: async (email, password) => {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
+
+        console.log('AUTH RESULT', { data, error });
+
+        if (error) {
+            alert(error.message);
+            throw error;
+        }
         return data;
     },
 
