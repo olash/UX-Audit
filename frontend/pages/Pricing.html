@@ -268,7 +268,7 @@
                         <div class="flex justify-between items-center mb-1.5">
                             <label for="password"
                                 class="block text-xs font-medium text-slate-700 uppercase tracking-wide">Password</label>
-                            <a href="#" onclick="router('/reset-password')"
+                            <a href="ResetPassword.html"
                                 class="text-xs font-medium text-slate-500 hover:text-slate-900">Forgot password?</a>
                         </div>
                         <input id="password" name="password" type="password" autocomplete="current-password" required=""
@@ -281,8 +281,8 @@
                     </button>
                 </form>
                 <p class="text-center text-sm text-slate-500">
-                    Don't have an account? <a href="#" onclick="router('/signup')"
-                        class="font-medium text-slate-900 hover:underline">Sign up</a>
+                    Don't have an account? <a href="Signup.html" class="font-medium text-slate-900 hover:underline">Sign
+                        up</a>
                 </p>
             </div>
         </div>
@@ -338,8 +338,8 @@
                     </button>
                 </form>
                 <p class="text-center text-sm text-slate-500">
-                    Already have an account? <a href="#" onclick="router('/login')"
-                        class="font-medium text-slate-900 hover:underline">Log in</a>
+                    Already have an account? <a href="Login.html" class="font-medium text-slate-900 hover:underline">Log
+                        in</a>
                 </p>
             </div>
         </div>
@@ -374,7 +374,7 @@
                     </button>
                 </form>
                 <div class="text-center">
-                    <a href="#" onclick="router('/login')"
+                    <a href="Login.html"
                         class="flex items-center justify-center gap-1 text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors">
                         <span class="iconify" data-icon="lucide:arrow-left" data-width="16"></span> Back to login
                     </a>
@@ -573,7 +573,7 @@
     <!-- 4. NEW AUDIT TEMPLATE -->
     <template id="tpl-new-audit">
         <div class="max-w-2xl mx-auto px-4 py-12">
-            <a href="#" onclick="router('/dashboard')"
+            <a href="Dashboard_Homepage.html"
                 class="inline-flex items-center text-sm font-medium text-slate-500 hover:text-slate-900 mb-8 transition-colors">
                 <span class="iconify mr-1" data-icon="lucide:arrow-left" data-width="16"></span> Back to dashboard
             </a>
@@ -612,8 +612,8 @@
                     </div>
 
                     <div class="flex items-center justify-end gap-3">
-                        <button type="button" onclick="router('/dashboard')"
-                            class="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg transition-colors">Cancel</button>
+                        <a href="Dashboard_Homepage.html"
+                            class="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-lg transition-colors">Cancel</a>
                         <button type="submit"
                             class="bg-slate-900 hover:bg-slate-800 text-white font-medium px-6 py-2.5 rounded-lg transition-all shadow-sm flex items-center gap-2">
                             Start Audit <span class="iconify" data-icon="lucide:arrow-right" data-width="16"></span>

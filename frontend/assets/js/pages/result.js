@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (!auditId) {
         App.toast('error', 'No Audit ID specified');
-        setTimeout(() => window.location.href = 'Reports.html', 1500);
+        setTimeout(() => window.location.href = '/pages/Reports.html', 1500);
         return;
     }
 

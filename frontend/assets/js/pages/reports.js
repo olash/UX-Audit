@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 </div>
                                 <h3 class="text-sm font-medium text-slate-900 mb-1">No reports generated</h3>
                                 <p class="text-xs text-slate-500 mb-4">Your audit history will appear here.</p>
-                                <button onclick="window.location.href='Create New Audit.html'" class="text-xs font-medium text-emerald-600 hover:text-emerald-700">Start new audit &rarr;</button>
+                                <button onclick="window.location.href='/pages/Create New Audit.html'" class="text-xs font-medium text-emerald-600 hover:text-emerald-700">Start new audit &rarr;</button>
                             </div>
                         </td>
                     </tr>
@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 return `
-                <tr class="group hover:bg-slate-50 transition-colors cursor-pointer" onclick="window.location.href='Dashboard_Recent Audit Page [View Result].html?id=${audit.id}'">
+                <tr class="group hover:bg-slate-50 transition-colors cursor-pointer" onclick="window.location.href='/pages/Dashboard_Recent Audit Page [View Result].html?id=${audit.id}'">
                     <td class="px-4 py-3 text-center" onclick="event.stopPropagation()">
                          <input type="checkbox" class="rounded border-slate-300 text-slate-900 focus:ring-slate-900 h-3.5 w-3.5 cursor-pointer">
                     </td>
@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </td>
                      <td class="py-3 px-4 text-right" onclick="event.stopPropagation()">
                          <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                             <button class="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200/50 rounded transition-colors" onclick="window.location.href='Dashboard_Recent Audit Page [View Result].html?id=${audit.id}'">
+                             <button class="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200/50 rounded transition-colors" onclick="window.location.href='/pages/Dashboard_Recent Audit Page [View Result].html?id=${audit.id}'">
                                  <span class="iconify" data-icon="lucide:eye" data-width="16"></span>
                              </button>
                          </div>

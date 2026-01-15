@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 return `
-                <tr class="group border-b border-slate-50 last:border-0 hover:bg-slate-50/80 transition-colors cursor-pointer" onclick="window.location.href='Dashboard_Recent Audit Page [View Result].html?id=${audit.id}'">
+                <tr class="group border-b border-slate-50 last:border-0 hover:bg-slate-50/80 transition-colors cursor-pointer" onclick="window.location.href='/pages/Dashboard_Recent Audit Page [View Result].html?id=${audit.id}'">
                     <td class="py-3 px-6 whitespace-nowrap">
                         <div class="flex items-center gap-2">
                             <div class="w-6 h-6 rounded bg-slate-100 flex items-center justify-center text-slate-500">

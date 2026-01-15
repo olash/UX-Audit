@@ -30,7 +30,7 @@ const App = {
                 // Only redirect if NOT on an auth page already
                 const isAuthPage = ['Login.html', 'Signup.html', 'ResetPassword.html', 'Landing Page.html'].some(p => window.location.pathname.includes(p));
                 if (!isAuthPage) {
-                    window.location.href = 'Landing Page.html';
+                    window.location.href = '/pages/Landing Page.html';
                 }
             }
         });
@@ -72,7 +72,7 @@ const App = {
     logout: async () => {
         const { error } = await supabase.auth.signOut();
         if (error) throw error;
-        window.location.href = 'Landing Page.html';
+        window.location.href = '/pages/Landing Page.html';
     },
 
     // API Helper
@@ -160,7 +160,7 @@ const App = {
                 // If not on an auth page, redirect
                 const isAuthPage = ['Login.html', 'Signup.html', 'ResetPassword.html'].some(p => window.location.pathname.includes(p));
                 if (!isAuthPage) {
-                    window.location.href = 'Login.html';
+                    window.location.href = '/pages/Login.html';
                 }
                 throw new Error("Unauthorized");
             }
