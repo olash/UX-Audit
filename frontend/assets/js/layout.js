@@ -9,6 +9,42 @@ const Layout = {
             const html = await response.text();
             document.getElementById('app').innerHTML = html;
 
+            // --- EVENT LISTENERS ---
+
+            // 1. Mobile Menu
+            const menuToggle = document.getElementById('mobileMenuToggle');
+            const menu = document.getElementById('mobileMenu');
+            if (menuToggle && menu) {
+                menuToggle.addEventListener('click', () => {
+                    menu.classList.toggle('hidden');
+                });
+            }
+
+            // 2. Notifications
+            const notifBtn = document.getElementById('notifBtn');
+            const notifMenu = document.getElementById('notifMenu');
+            if (notifBtn && notifMenu) {
+                notifBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent closing immediately
+                    notifMenu.classList.toggle('hidden');
+                });
+
+                // Close on click outside
+                document.addEventListener('click', (e) => {
+                    if (!notifBtn.contains(e.target) && !notifMenu.contains(e.target)) {
+                        notifMenu.classList.add('hidden');
+                    }
+                });
+            }
+
+            // 3. Logout
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async () => {
+                    await App.logout();
+                });
+            }
+
             // Highlight Active Nav
             if (activeNavId) {
                 const el = document.getElementById(activeNavId);

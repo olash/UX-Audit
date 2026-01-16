@@ -19,18 +19,27 @@ const App = {
             console.log("Auth Event:", event, App.user);
 
             if (event === 'SIGNED_IN') {
+                // Check for redirect memory
+                const redirect = localStorage.getItem('postLoginRedirect');
+                if (redirect) {
+                    localStorage.removeItem('postLoginRedirect');
+                    window.location.href = redirect;
+                    return;
+                }
+
                 // If on login page, redirect to dashboard
                 // Only redirect if explicitly on an auth page to avoid redirect loops
                 const isAuthPage = ['Login.html', 'Signup.html', 'ResetPassword.html'].some(p => window.location.pathname.includes(p));
                 if (isAuthPage) {
-                    window.location.href = 'Dashboard_Homepage.html';
+                    window.location.href = '/pages/Dashboard_Homepage.html';
                 }
             }
             if (event === 'SIGNED_OUT') {
                 // Only redirect if NOT on an auth page already
-                const isAuthPage = ['Login.html', 'Signup.html', 'ResetPassword.html', 'Landing Page.html'].some(p => window.location.pathname.includes(p));
-                if (!isAuthPage) {
-                    window.location.href = '/pages/Landing Page.html';
+                const isAuthPage = ['Login.html', 'Signup.html', 'ResetPassword.html', 'Landing Page.html', 'index.html'].some(p => window.location.pathname.includes(p));
+                // Allow public landing page
+                if (!isAuthPage && window.location.pathname !== '/' && !window.location.pathname.endsWith('/pages/index.html')) {
+                    window.location.href = '/pages/index.html';
                 }
             }
         });
@@ -160,6 +169,8 @@ const App = {
                 // If not on an auth page, redirect
                 const isAuthPage = ['Login.html', 'Signup.html', 'ResetPassword.html'].some(p => window.location.pathname.includes(p));
                 if (!isAuthPage) {
+                    // Save Redirect Memory
+                    localStorage.setItem('postLoginRedirect', window.location.href);
                     window.location.href = '/pages/Login.html';
                 }
                 throw new Error("Unauthorized");
