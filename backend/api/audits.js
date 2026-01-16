@@ -32,12 +32,13 @@ router.post("/", async (req, res) => {
 
         // --- USAGE CHECK ---
         const usage = await checkUsage(user.id);
-        if (!usage.allowed) {
-            return res.status(403).json({
-                error: "Limit Exceeded",
-                message: usage.reason
-            });
-        }
+        // FIXME: Temporarily disabled for MVP development
+        // if (!usage.allowed) {
+        //     return res.status(403).json({
+        //         error: "Limit Exceeded",
+        //         message: usage.reason
+        //     });
+        // }
 
         console.log(`User ${user.id} (${usage.plan}) starting audit. Page limit: ${usage.pageLimit}`);
 
