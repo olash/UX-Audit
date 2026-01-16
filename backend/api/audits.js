@@ -116,7 +116,19 @@ router.get("/:id/results", async (req, res) => {
         // Fetch pages with their analysis
         const { data: pages, error } = await supabase
             .from('pages')
-            .select('*, analysis(*)') // Using 'analysis' relation if set up, or check actual table name
+            .select(`
+                id,
+                url,
+                screenshot_url,
+                ai_reviews (
+                    id,
+                    issues,
+                    score,
+                    scores,
+                    summary,
+                    created_at
+                )
+            `)
             .eq('project_id', id);
 
         // Fallback if 'analysis' relation helper doesn't exist, we might need manual join
