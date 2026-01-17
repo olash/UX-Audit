@@ -93,6 +93,7 @@ const App = {
 
     logout: async () => {
         await supabase.auth.signOut();
+        window.location.replace('/pages/index.html');
     },
 
     // API Helper
