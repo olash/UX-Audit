@@ -102,11 +102,16 @@ const App = {
         baseUrl: 'https://ux-audit-api.onrender.com',
 
         async getAuthHeaders() {
-            const { data } = await supabase.auth.getSession();
-            const token = data?.session?.access_token;
+            const { data, error } = await supabase.auth.getSession();
+
+            if (error || !data?.session?.access_token) {
+                console.error('❌ No active session found');
+                throw new Error('Not authenticated');
+            }
+
             return {
-                'Content-Type': 'application/json',
-                ...(token && { Authorization: `Bearer ${token}` })
+                'Authorization': `Bearer ${data.session.access_token}`,
+                'Content-Type': 'application/json'
             };
         },
 
@@ -119,12 +124,18 @@ const App = {
 
         async post(endpoint, body) {
             const headers = await this.getAuthHeaders();
+
             const res = await fetch(`${this.baseUrl}/api${endpoint}`, {
                 method: 'POST',
                 headers,
                 body: JSON.stringify(body)
             });
-            if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
+
+            if (!res.ok) {
+                const text = await res.text();
+                throw new Error(`API Error: ${text}`);
+            }
+
             return res.json();
         }
     },
