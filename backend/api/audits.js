@@ -9,13 +9,27 @@ const router = express.Router();
 
 // Helper: Extract user from request
 async function getUserFromRequest(req) {
-    const authHeader = req.headers.authorization;
-    if (!authHeader) return null;
+    console.log('🔐 Incoming headers:', req.headers);
 
-    const token = authHeader.replace('Bearer ', '');
+    const authHeader = req.headers.authorization;
+    console.log('🔐 Authorization header:', authHeader);
+
+    if (!authHeader) {
+        console.log('❌ No auth header');
+        return null;
+    }
+
+    const token = authHeader.replace('Bearer ', '').trim();
+    console.log('🔐 Extracted token:', token.slice(0, 20), '...');
+
     const { data, error } = await supabase.auth.getUser(token);
 
-    if (error) return null;
+    if (error) {
+        console.log('❌ Supabase auth error:', error);
+        return null;
+    }
+
+    console.log('✅ Authenticated user:', data.user.id);
     return data.user;
 }
 
