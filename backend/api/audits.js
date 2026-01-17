@@ -3,7 +3,6 @@ import { createProject } from "../db/createProject.js";
 import { runScraper } from "../scraper/scraper.js";
 import { supabase } from "../db/supabase.js";
 import { generateReport } from "../reports/generateReport.js";
-import { checkUsage } from "../utils/usage.js";
 
 const router = express.Router();
 
@@ -30,23 +29,16 @@ router.post("/", async (req, res) => {
             return res.status(400).json({ error: "URL is required" });
         }
 
-        // --- USAGE CHECK ---
-        const usage = await checkUsage(user.id);
-        // FIXME: Temporarily disabled for MVP development
-        // if (!usage.allowed) {
-        //     return res.status(403).json({
-        //         error: "Limit Exceeded",
-        //         message: usage.reason
-        //     });
-        // }
+        // --- USAGE CHECK REMOVED ---
+        // const usage = await checkUsage(user.id);
 
-        console.log(`User ${user.id} (${usage.plan}) starting audit. Page limit: ${usage.pageLimit}`);
+        console.log(`User ${user.id} starting audit.`);
 
         // 1. Create project immediately associated with user
         const project = await createProject(url, user.id);
 
-        // 2. Start (async) scrape with Page Limit
-        runScraper(url, project.id, usage.pageLimit).catch(err => console.error("Background audit error:", err));
+        // 2. Start (async) scrape with Default Page Limit
+        runScraper(url, project.id).catch(err => console.error("Background audit error:", err));
 
         return res.status(201).json({
             message: "Audit started",
