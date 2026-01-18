@@ -138,7 +138,6 @@ router.get("/:id/results", async (req, res) => {
                 ai_reviews!ai_reviews_page_id_fkey (
                     id,
                     issues,
-                    score,
                     scores,
                     summary,
                     created_at
