@@ -10,7 +10,11 @@ export async function crawlSite(startUrl, projectId, maxPages = 10) {
     const visited = new Set();
     const queue = [startUrl];
 
-    const browser = await chromium.launch({ headless: true });
+    const browser = await chromium.launch({
+        headless: true,
+        channel: 'chromium',
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
     const context = await browser.newContext({
         ignoreHTTPSErrors: true,
         viewport: { width: 1280, height: 800 }
