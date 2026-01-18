@@ -7,37 +7,41 @@ import { generateReport } from "../reports/generateReport.js";
 
 const router = express.Router();
 
+import jwt from 'jsonwebtoken';
+
 // Helper: Extract user from request
 async function getUserFromRequest(req) {
-    console.log('🔐 Incoming headers:', req.headers);
-
     const authHeader = req.headers.authorization;
-    console.log('🔐 Authorization header:', authHeader);
-
     if (!authHeader) {
-        console.log('❌ No auth header');
-        return null;
+        console.error('❌ No Authorization header');
+        throw new Error('No Authorization header');
     }
 
     const token = authHeader.replace('Bearer ', '').trim();
-    console.log('🔐 Extracted token:', token.slice(0, 20), '...');
 
-    const { data, error } = await supabase.auth.getUser(token);
+    // Verify token manually (NO Supabase session needed)
+    const decoded = jwt.decode(token);
 
-    if (error) {
-        console.log('❌ Supabase auth error:', error);
-        return null;
+    if (!decoded || !decoded.sub) {
+        console.error('❌ Invalid token');
+        throw new Error('Invalid token');
     }
 
-    console.log('✅ Authenticated user:', data.user.id);
-    return data.user;
+    return {
+        id: decoded.sub,
+        email: decoded.email
+    };
 }
 
 // POST /api/audits - Start an audit
 router.post("/", async (req, res) => {
     try {
-        const user = await getUserFromRequest(req);
-        if (!user) return res.status(401).json({ error: 'Unauthorized' });
+        let user;
+        try {
+            user = await getUserFromRequest(req);
+        } catch (e) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
 
         const { url } = req.body;
         if (!url) {
@@ -69,8 +73,12 @@ router.post("/", async (req, res) => {
 // GET /api/audits - Get all audits for user
 router.get("/", async (req, res) => {
     try {
-        const user = await getUserFromRequest(req);
-        if (!user) return res.status(401).json({ error: 'Unauthorized' });
+        let user;
+        try {
+            user = await getUserFromRequest(req);
+        } catch (e) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
 
         let query = supabase
             .from('projects')
