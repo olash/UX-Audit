@@ -12,7 +12,6 @@ export async function crawlSite(startUrl, projectId, maxPages = 10) {
 
     const browser = await chromium.launch({
         headless: true,
-        channel: 'chromium',
         args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
     const context = await browser.newContext({
