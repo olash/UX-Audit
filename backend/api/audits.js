@@ -127,7 +127,7 @@ router.get("/:id/results", async (req, res) => {
                 id,
                 url,
                 screenshot_url,
-                ai_reviews (
+                ai_reviews!ai_reviews_page_id_fkey (
                     id,
                     issues,
                     score,
