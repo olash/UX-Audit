@@ -16,6 +16,13 @@ const App = {
         // Listen for auth changes
         supabase.auth.onAuthStateChange((event, session) => {
             App.user = session?.user || null;
+            if (event === 'USER_UPDATED' || event === 'SIGNED_IN') {
+                // Update header if layout is loaded
+                if (window.Layout && window.Layout.updateHeaderUser) {
+                    window.Layout.updateHeaderUser();
+                }
+            }
+
             console.log("Auth Event:", event, App.user);
 
             if (event === 'SIGNED_IN') {

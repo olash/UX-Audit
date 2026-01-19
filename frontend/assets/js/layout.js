@@ -118,7 +118,18 @@ const Layout = {
 
         if (nameEl) nameEl.textContent = name;
         if (emailEl) emailEl.textContent = email;
-        if (initEl) initEl.textContent = initials;
+        // if (initEl) initEl.textContent = initials; // Initials removed in favor of image
+
+        const avatarImg = document.getElementById('menuAvatar');
+        if (avatarImg) {
+            const avatarUrl = meta.avatar_url || '/avatar-placeholder.png';
+            avatarImg.src = avatarUrl;
+
+            // Fallback on error
+            avatarImg.onerror = () => {
+                avatarImg.src = '/avatar-placeholder.png';
+            };
+        }
     },
 
     /**
