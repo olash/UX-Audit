@@ -111,36 +111,55 @@ function setupAvatarHandler() {
 
     avatarUpload.addEventListener('change', async (e) => {
         const file = e.target.files[0];
+
+        console.log(file, file?.type, file?.size);
+
         if (!file) return;
 
-        const { data: { user } } = await supabase.auth.getUser();
-        const filePath = `${user.id}.png`; // Simplified for demo, ideally handle extensions
+        if (file.size === 0 || !file.type.startsWith('image/')) {
+            App.toast('error', 'Invalid file. Please upload a valid image (PNG or JPEG).');
+            return;
+        }
 
-        // UI Loading indication for image?
+        const { data: { user } } = await supabase.auth.getUser();
+        const filePath = `${user.id}.png`; // Keep simple for now
 
         try {
-            await supabase.storage
+            const { data, error } = await supabase.storage
                 .from('avatars')
-                .upload(filePath, file, { upsert: true });
+                .upload(filePath, file, {
+                    upsert: true,
+                    contentType: file.type
+                });
 
-            const { data } = supabase.storage
+            if (error) {
+                console.error('Upload Error:', error);
+                throw error;
+            }
+
+            const { data: publicData } = supabase.storage
                 .from('avatars')
                 .getPublicUrl(filePath);
 
-            // Important hack: add timestamp to bust cache if replacing same file
-            const publicUrl = `${data.publicUrl}?t=${new Date().getTime()}`;
+            // Add timestamp to bust cache
+            const publicUrl = `${publicData.publicUrl}?t=${new Date().getTime()}`;
 
-            await supabase.auth.updateUser({
+            const { error: updateError } = await supabase.auth.updateUser({
                 data: {
                     avatar_url: publicUrl
                 }
             });
 
+            if (updateError) {
+                console.error('Update User Error:', updateError);
+                throw updateError;
+            }
+
             document.getElementById('avatar').src = publicUrl;
             App.toast('success', 'Avatar updated');
         } catch (err) {
             console.error('Avatar upload failed', err);
-            App.toast('error', 'Failed to upload avatar');
+            App.toast('error', 'Failed to upload avatar: ' + (err.message || 'Unknown error'));
         }
     });
 }
