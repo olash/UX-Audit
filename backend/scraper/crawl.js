@@ -13,10 +13,11 @@ export async function crawlSite(startUrl, projectId, maxPages = 10) {
     const browser = await chromium.launch({
         headless: true,
         args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
             '--disable-gpu',
+            '--disable-dev-shm-usage',
+            '--disable-setuid-sandbox',
+            '--no-sandbox',
+            '--no-zygote',
             '--single-process'
         ]
     });
