@@ -118,17 +118,35 @@ const Layout = {
 
         if (nameEl) nameEl.textContent = name;
         if (emailEl) emailEl.textContent = email;
-        // if (initEl) initEl.textContent = initials; // Initials removed in favor of image
 
-        const avatarImg = document.getElementById('menuAvatar');
-        if (avatarImg) {
-            const avatarUrl = meta.avatar_url || '/avatar-placeholder.png';
-            avatarImg.src = avatarUrl;
+        // Robust Avatar Logic (Single Source of Truth)
+        // 'user', 'meta', 'email' are already defined above
 
-            // Fallback on error
-            avatarImg.onerror = () => {
-                avatarImg.src = '/avatar-placeholder.png';
+        const avatarUrl = meta.avatar_url;
+        const firstName = meta.first_name;
+        // email is already 'email' variable
+
+        const initial = (firstName && firstName[0]) ? firstName[0] : (email && email[0] ? email[0] : "U");
+
+        const img = document.getElementById("menuAvatarImg");
+        const fallback = document.getElementById("menuAvatarFallback");
+
+        if (img && fallback) {
+            // Handle broken image edge-case
+            img.onerror = () => {
+                img.classList.add("hidden");
+                fallback.classList.remove("hidden");
             };
+
+            if (avatarUrl) {
+                img.src = avatarUrl;
+                img.classList.remove("hidden");
+                fallback.classList.add("hidden");
+            } else {
+                fallback.textContent = initial.toUpperCase();
+                fallback.classList.remove("hidden");
+                img.classList.add("hidden");
+            }
         }
     },
 

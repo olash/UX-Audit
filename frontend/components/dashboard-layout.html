@@ -115,8 +115,40 @@
                         <p class="text-xs font-medium text-slate-900" id="user-name">User</p>
                         <p class="text-[10px] text-slate-500" id="user-email">Loading...</p>
                     </div>
-                    <img id="menuAvatar" src="/avatar-placeholder.png"
-                        class="w-8 h-8 rounded-full object-cover border border-indigo-100 bg-indigo-50" alt="User" />
+                    <style>
+                        .avatar-wrapper {
+                            width: 36px;
+                            height: 36px;
+                            border-radius: 9999px;
+                            overflow: hidden;
+                            position: relative;
+                            /* Added for positioning if needed */
+                        }
+
+                        .avatar-img {
+                            width: 100%;
+                            height: 100%;
+                            object-fit: cover;
+                        }
+
+                        .avatar-fallback {
+                            width: 100%;
+                            height: 100%;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            background: #f1f5f9;
+                            /* slate-100 */
+                            color: #334155;
+                            /* slate-700 */
+                            font-weight: 600;
+                            text-transform: uppercase;
+                        }
+                    </style>
+                    <div id="avatarWrapper" class="avatar-wrapper border border-indigo-100">
+                        <img id="menuAvatarImg" class="avatar-img hidden" alt="User" />
+                        <div id="menuAvatarFallback" class="avatar-fallback">U</div>
+                    </div>
                 </div>
 
                 <button id="logoutBtn" class="p-2 text-slate-400 hover:text-red-600 transition-colors" title="Logout">

@@ -129,6 +129,8 @@ router.get("/:id/results", async (req, res) => {
     try {
         const { id } = req.params;
         // Fetch pages with their analysis
+        // Fetch pages with their analysis
+        // Fix: Use explicit foreign key and select only confirmed columns
         const { data: pages, error } = await supabase
             .from('pages')
             .select(`
@@ -136,11 +138,7 @@ router.get("/:id/results", async (req, res) => {
                 url,
                 screenshot_url,
                 ai_reviews!ai_reviews_page_id_fkey (
-                    id,
-                    issues,
-                    scores,
-                    summary,
-                    created_at
+                    scores
                 )
             `)
             .eq('project_id', id);
@@ -148,12 +146,15 @@ router.get("/:id/results", async (req, res) => {
         // Fallback if 'analysis' relation helper doesn't exist, we might need manual join
         // But assuming supabase generic works if foreign keys exist.
 
-        if (error) throw error;
+        if (error) {
+            console.error("❌ Results fetch error:", error);
+            throw error;
+        }
 
         res.json({ pages });
     } catch (error) {
-        console.error("Error fetching results:", error);
-        res.status(500).json({ error: "Failed to fetch results" });
+        console.error("Error fetching results detailed:", error);
+        res.status(500).json({ error: "Failed to fetch results", details: error.message });
     }
 });
 
