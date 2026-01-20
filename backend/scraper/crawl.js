@@ -11,22 +11,20 @@ export async function crawlSite(startUrl, projectId, maxPages = 10) {
     const visited = new Set();
     const queue = [startUrl];
 
-    // Hardcoded path for Render (as requested)
-    const chromiumPath = "/opt/render/.cache/ms-playwright/chromium-1200/chrome-linux64/chrome";
+    // Hardcoded path for Render (Strict Mode - No Fallback)
+    const chromiumPath = "/opt/render/.cache/ms-playwright/chromium-1200/chrome-linux/chrome";
 
-    // Check if we are on Render (path exists) or local
-    let executablePath = undefined;
-
-    if (fs.existsSync(chromiumPath)) {
-        console.log(`🚀 Found Render Chromium at ${chromiumPath}`);
-        executablePath = chromiumPath;
-    } else {
-        console.warn(`⚠️ Chromium not found at ${chromiumPath}. Using default bundled Chromium (Safe for local dev).`);
+    if (!fs.existsSync(chromiumPath)) {
+        throw new Error(
+            `❌ Chromium binary missing at ${chromiumPath}. Playwright install step failed.`
+        );
     }
+
+    console.log(`✅ Using Chromium at ${chromiumPath}`);
 
     const browser = await chromium.launch({
         headless: true,
-        executablePath: executablePath,
+        executablePath: chromiumPath,
         args: [
             "--no-sandbox",
             "--disable-setuid-sandbox",
