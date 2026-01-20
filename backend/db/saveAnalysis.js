@@ -6,8 +6,7 @@ export async function saveAnalysis(pageId, analysis) {
     const { data, error } = await supabase.from("ai_reviews").insert({
         page_id: pageId,
         analysis: analysis,         // Full JSON dump (includes issues, etc)
-        scores: analysis.scores,    // Breakdown JSON { usability: 90, ... }
-        score: analysis.score       // Overall integer score
+        scores: analysis.scores     // Breakdown JSON { usability: 90, ... }
     });
 
     if (error) {

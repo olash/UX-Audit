@@ -15,7 +15,13 @@ export async function finalizeProject(projectId) {
         // Joining pages -> ai_reviews using the foreign key relationship
         const { data: pages, error: pageError } = await supabase
             .from('pages')
-            .select('id, url, ai_reviews(scores, score)')
+            .select(`
+                id, 
+                url, 
+                ai_reviews!ai_reviews_page_id_fkey (
+                    scores
+                )
+            `)
             .eq('project_id', projectId);
 
         if (pageError) throw pageError;
@@ -38,19 +44,31 @@ export async function finalizeProject(projectId) {
                 // Take the most recent review if multiple (assuming order or just first)
                 // In a perfect world we query the latest, but usually 1 page = 1 review per crawl
                 const review = page.ai_reviews[0];
+                const scores = review.scores || {};
 
-                if (review.score) {
-                    totalOverall += review.score;
-                }
+                // Calculate Page Overall Score from its breakdown
+                let pageTotal = 0;
+                let pageDimCount = 0;
+                Object.values(scores).forEach(val => {
+                    if (typeof val === 'number') {
+                        pageTotal += val;
+                        pageDimCount++;
+                    }
+                });
+                const pageOverall = pageDimCount > 0 ? Math.round(pageTotal / pageDimCount) : 0;
 
-                if (review.scores) {
+                // Add to project total
+                if (pageDimCount > 0) {
+                    totalOverall += pageOverall;
+
+                    // Add to dimension totals
                     DIMENSIONS.forEach(dim => {
-                        if (typeof review.scores[dim] === 'number') {
-                            dimTotals[dim] += review.scores[dim];
+                        if (typeof scores[dim] === 'number') {
+                            dimTotals[dim] += scores[dim];
                         }
                     });
+                    count++;
                 }
-                count++;
             }
         });
 
