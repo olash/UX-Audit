@@ -12,6 +12,7 @@ export async function crawlSite(startUrl, projectId, maxPages = 10) {
 
     const browser = await chromium.launch({
         headless: true,
+        executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined,
         args: [
             '--disable-gpu',
             '--disable-dev-shm-usage',
