@@ -1,4 +1,5 @@
 import { chromium } from "playwright";
+import fs from "fs";
 import { normalizeUrl, isInternalLink, ensureScreenshotDir } from "./utils.js";
 import { captureScreenshot, processScreenshot } from "./screenshot.js";
 import { savePage } from "../db/savePage.js";
@@ -10,16 +11,26 @@ export async function crawlSite(startUrl, projectId, maxPages = 10) {
     const visited = new Set();
     const queue = [startUrl];
 
+    // Hardcoded path for Render (as requested)
+    const chromiumPath = "/opt/render/.cache/ms-playwright/chromium-1200/chrome-linux64/chrome";
+
+    // Check if we are on Render (path exists) or local
+    let executablePath = undefined;
+
+    if (fs.existsSync(chromiumPath)) {
+        console.log(`🚀 Found Render Chromium at ${chromiumPath}`);
+        executablePath = chromiumPath;
+    } else {
+        console.warn(`⚠️ Chromium not found at ${chromiumPath}. Using default bundled Chromium (Safe for local dev).`);
+    }
+
     const browser = await chromium.launch({
         headless: true,
-        executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH || undefined,
+        executablePath: executablePath,
         args: [
-            '--disable-gpu',
-            '--disable-dev-shm-usage',
-            '--disable-setuid-sandbox',
-            '--no-sandbox',
-            '--no-zygote',
-            '--single-process'
+            "--no-sandbox",
+            "--disable-setuid-sandbox",
+            "--disable-dev-shm-usage"
         ]
     });
     const context = await browser.newContext({
