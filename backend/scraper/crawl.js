@@ -11,20 +11,8 @@ export async function crawlSite(startUrl, projectId, maxPages = 10) {
     const visited = new Set();
     const queue = [startUrl];
 
-    // Hardcoded path for Render (Strict Mode - No Fallback)
-    const chromiumPath = "/opt/render/.cache/ms-playwright/chromium-1200/chrome-linux/chrome";
-
-    if (!fs.existsSync(chromiumPath)) {
-        throw new Error(
-            `❌ Chromium binary missing at ${chromiumPath}. Playwright install step failed.`
-        );
-    }
-
-    console.log(`✅ Using Chromium at ${chromiumPath}`);
-
     const browser = await chromium.launch({
         headless: true,
-        executablePath: chromiumPath,
         args: [
             "--no-sandbox",
             "--disable-setuid-sandbox",
