@@ -16,11 +16,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.get("/", (req, res) => {
+    res.json({ status: "ok", service: "ux-audit-backend" });
+});
+
 // Routes
 app.use("/api/audits", auditRoutes);
 app.use("/api", userRoutes); // Mount at /api so we get /api/me, /api/usage
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`Backend running on http://localhost:${PORT}`);
 });
