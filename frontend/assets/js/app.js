@@ -105,7 +105,7 @@ const App = {
 
     // API Helper
     api: {
-        baseUrl: 'http://ux-audit-alb-1605700393.us-east-1.elb.amazonaws.com',
+        baseUrl: 'https://api.tryuxaudit.com',
 
         async getAuthHeaders() {
             const { data, error } = await supabase.auth.getSession();
