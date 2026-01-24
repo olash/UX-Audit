@@ -17,7 +17,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
-    res.json({ status: "ok", service: "ux-audit-backend" });
+    res.status(200).send('OK');
 });
 
 // Routes
