@@ -20,6 +20,10 @@ app.get("/", (req, res) => {
     res.status(200).send('OK');
 });
 
+app.get("/health", (req, res) => {
+    res.status(200).json({ status: "ok" });
+});
+
 // Routes
 app.use("/api/audits", auditRoutes);
 app.use("/api", userRoutes); // Mount at /api so we get /api/me, /api/usage
