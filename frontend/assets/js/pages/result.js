@@ -23,33 +23,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 4. Bind Data
         bindProjectHeader(project);
         renderScoreCircle(project.score);
-        renderBreakdown(project.score_breakdown);
+
+
+        // REFACTOR: Calculate breakdown from pages instead of project
+        const breakdown = calculateBreakdown(pages);
+        renderBreakdown(breakdown);
+
         renderPages(pages);
 
         // 5. Bind Download Button
         const btn = document.getElementById('btn-download');
         if (project.report_url) {
+            btn.disabled = false;
             btn.onclick = () => window.open(project.report_url, '_blank');
         } else {
-            btn.onclick = async () => {
-                btn.disabled = true;
-                btn.innerHTML = `<span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="14"></span> Generating...`;
-                try {
-                    const res = await App.api.get(`/audits/${auditId}/report`);
-                    window.open(res.url, '_blank');
-                    btn.innerHTML = `<span class="iconify" data-icon="lucide:check" data-width="14"></span> Report Ready`;
-                    setTimeout(() => {
-                        btn.disabled = false;
-                        btn.innerHTML = `<span class="iconify" data-icon="lucide:download" data-width="14"></span> Download Report`;
-                        btn.onclick = () => window.open(res.url, '_blank');
-                    }, 3000);
-                } catch (e) {
-                    console.error(e);
-                    btn.disabled = false;
-                    btn.innerHTML = 'Retry Download';
-                    App.toast('error', 'Failed to generate report');
-                }
-            };
+            // Disable until PDF exists (pushed by backend later)
+            btn.disabled = true;
+            btn.innerHTML = `<span class="iconify" data-icon="lucide:file-x" data-width="14"></span> Report Not Ready`;
+            // Remove generation logic for now as per instructions
         }
 
     } catch (err) {
@@ -208,4 +199,36 @@ function renderPages(pages) {
 
     // Icons
     if (window.Iconify) window.Iconify.scan();
+}
+
+function calculateBreakdown(pages) {
+    if (!pages || pages.length === 0) return {};
+
+    const totals = {};
+    const counts = {};
+    const DIMENSIONS = ["usability", "navigation", "clarity", "accessibility", "aesthetics"];
+
+    DIMENSIONS.forEach(d => { totals[d] = 0; counts[d] = 0; });
+
+    pages.forEach(page => {
+        const review = page.ai_reviews && page.ai_reviews.length > 0 ? page.ai_reviews[0] : null;
+        if (review && review.scores) {
+            Object.entries(review.scores).forEach(([key, val]) => {
+                const k = key.toLowerCase();
+                if (typeof val === 'number' && DIMENSIONS.includes(k)) {
+                    totals[k] += val;
+                    counts[k]++;
+                }
+            });
+        }
+    });
+
+    const breakdown = {};
+    DIMENSIONS.forEach(d => {
+        if (counts[d] > 0) {
+            breakdown[d] = Math.round(totals[d] / counts[d]);
+        }
+    });
+
+    return breakdown;
 }

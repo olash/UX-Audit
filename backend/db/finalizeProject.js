@@ -87,10 +87,10 @@ export async function finalizeProject(projectId) {
         const { error: updateError } = await supabase
             .from('projects')
             .update({
-                status: 'completed',
                 score: finalOverall,
                 score_breakdown: finalBreakdown,
-                completed_at: new Date().toISOString()
+                completed_at: new Date().toISOString(),
+                status: 'completed'
             })
             .eq('id', projectId);
 

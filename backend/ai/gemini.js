@@ -8,8 +8,9 @@ export async function analyzeScreenshot(imagePath) {
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const MODEL_NAME = process.env.GEMINI_MODEL || "models/gemini-2.5-flash";
     const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash", // Updated to 1.5 flash for better performance/cost
+        model: MODEL_NAME,
         generationConfig: {
             responseMimeType: "application/json"
         }
@@ -48,6 +49,13 @@ Return the result as valid JSON:
   "summary": "A 2-3 sentence executive summary of the page's UX.",
   "positive_highlights": ["List of 2-3 things done well"]
 }
+
+IMPORTANT:
+Return ONLY valid JSON.
+Do not include markdown.
+Do not include explanations.
+Do not include trailing commas.
+The response must be parseable by JSON.parse().
 `
         },
         {

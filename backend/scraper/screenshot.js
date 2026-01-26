@@ -30,7 +30,13 @@ export async function captureScreenshot(page, url) {
  */
 export async function processScreenshot(localPath, projectId) {
     const fileBuffer = fs.readFileSync(localPath);
-    const fileName = `${projectId}/${path.basename(localPath)}`;
+
+    // Sanitize filename
+    const safeBasename = path.basename(localPath)
+        .normalize('NFKD')
+        .replace(/[^\w.-]/g, '_');
+
+    const fileName = `${projectId}/${safeBasename}`;
 
     const { data, error } = await supabase.storage
         .from("screenshots")
@@ -47,5 +53,7 @@ export async function processScreenshot(localPath, projectId) {
     // const { data: publicData } = supabase.storage.from('screenshots').getPublicUrl(fileName);
     // return publicData.publicUrl;
 
-    return data.path;
+    // Return public URL directly so pages.screenshot_url is correct
+    const { data: publicData } = supabase.storage.from('screenshots').getPublicUrl(fileName);
+    return publicData.publicUrl;
 }

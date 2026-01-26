@@ -21,18 +21,13 @@ app.get("/", (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-    res.status(200).json({
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        uptime: process.uptime()
-    });
+    res.status(200).json({ status: "ok" });
 });
 
 // Routes
 app.use("/api/audits", auditRoutes);
 app.use("/api", userRoutes); // Mount at /api so we get /api/me, /api/usage
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Backend running on http://localhost:${PORT}`);
+app.listen(4000, "0.0.0.0", () => {
+    console.log("Backend running on port 4000");
 });

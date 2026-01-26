@@ -138,7 +138,8 @@ router.get("/:id/results", async (req, res) => {
                 url,
                 screenshot_url,
                 ai_reviews!ai_reviews_page_id_fkey (
-                    scores
+                    scores,
+                    analysis
                 )
             `)
             .eq('project_id', id);
