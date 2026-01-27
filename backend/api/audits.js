@@ -175,4 +175,50 @@ router.get("/:id/report", async (req, res) => {
     }
 });
 
+
+// GET /api/audits/:id/issues - Get all issues for a project (joined with pages)
+router.get("/:id/issues", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // 1. Get all pages for this project
+        const { data: pages, error: pageError } = await supabase
+            .from('pages')
+            .select('id')
+            .eq('project_id', id);
+
+        if (pageError) throw pageError;
+
+        const pageIds = pages.map(p => p.id);
+
+        if (pageIds.length === 0) {
+            return res.json({ issues: [] });
+        }
+
+        // 2. Fetch issues for these pages, joining 'pages' to get URL
+        const { data: issues, error: issuesError } = await supabase
+            .from('ux_issues')
+            .select(`
+                id,
+                title,
+                description,
+                severity,
+                category,
+                ai_suggestion,
+                pages (
+                    url
+                )
+            `)
+            .in('page_id', pageIds);
+
+        if (issuesError) throw issuesError;
+
+        res.json({ issues });
+
+    } catch (error) {
+        console.error("Error fetching project issues:", error);
+        res.status(500).json({ error: "Failed to fetch issues" });
+    }
+});
+
 export default router;

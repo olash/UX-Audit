@@ -18,10 +18,12 @@ export async function saveAnalysis(pageId, analysis) {
     if (analysis.issues && Array.isArray(analysis.issues)) {
         const issuesToInsert = analysis.issues.map(issue => ({
             page_id: pageId,
-            title: issue.title,
+            title: issue.title || `${issue.category} issue detected`, // Enforce mandatory title
             description: issue.description,
             severity: issue.severity,
-            category: issue.category
+            category: issue.category,
+            // Fallback suggestion (Phase 1)
+            ai_suggestion: issue.ai_suggestion || `Consider improving ${issue.category ? issue.category.toLowerCase() : 'usability'} by addressing this issue. Focus on clarity, consistency, and accessibility best practices.`
         }));
 
         if (issuesToInsert.length > 0) {

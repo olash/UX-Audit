@@ -31,6 +31,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         renderPages(pages);
 
+        // 4b. Fetch and Render Suggested Fixes (from ux_issues)
+        try {
+            const { issues } = await App.api.get(`/audits/${auditId}/issues`);
+            const fixes = issues ? issues.filter(i => i.ai_suggestion) : [];
+            renderSuggestedFixes(fixes);
+        } catch (e) {
+            console.error("Failed to load suggested fixes", e);
+            document.getElementById('suggested-fixes-list').innerHTML = '<div class="p-6 text-center text-sm text-red-500">Failed to load suggestions.</div>';
+        }
+
         // 5. Bind Download Button
         const btn = document.getElementById('btn-download');
         if (project.report_url) {
@@ -231,4 +241,72 @@ function calculateBreakdown(pages) {
     });
 
     return breakdown;
+}
+
+function renderSuggestedFixes(fixes) {
+    const container = document.getElementById('suggested-fixes-list');
+    if (!container) return;
+
+    if (!fixes || fixes.length === 0) {
+        container.innerHTML = `
+            <div class="p-8 text-center bg-slate-50/50">
+                <div class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-400 mb-3">
+                    <span class="iconify" data-icon="lucide:check-circle" data-width="16"></span>
+                </div>
+                <h4 class="text-sm font-medium text-slate-900 mb-1">No actionable fixes needed yet</h4>
+                <p class="text-xs text-slate-500 max-w-xs mx-auto">Actionable recommendations will appear here as they are generated from the audit insights.</p>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = fixes.map(fix => {
+        // Icon based on category
+        let icon = 'lucide:lightbulb';
+        const cat = fix.category ? fix.category.toLowerCase() : '';
+        if (cat.includes('accessibility')) icon = 'lucide:accessibility';
+        else if (cat.includes('usability')) icon = 'lucide:mouse-pointer-click';
+        else if (cat.includes('clarity')) icon = 'lucide:eye';
+        else if (cat.includes('navigation')) icon = 'lucide:compass';
+        else if (cat.includes('aesthetics')) icon = 'lucide:palette';
+
+        const severity = fix.severity ? fix.severity.toLowerCase() : 'medium';
+        let badgeClass = 'bg-slate-50 text-slate-600 border-slate-100';
+        if (severity === 'critical') badgeClass = 'bg-red-50 text-red-700 border-red-100';
+        else if (severity === 'high') badgeClass = 'bg-orange-50 text-orange-700 border-orange-100';
+
+        return `
+            <div class="p-5 hover:bg-slate-50/50 transition-colors group">
+                <div class="flex items-start gap-4">
+                    <div class="mt-0.5 shrink-0">
+                        <span class="flex items-center justify-center w-8 h-8 rounded-full text-blue-600 bg-blue-50 border border-blue-100 ring-2 ring-blue-50/50">
+                            <span class="iconify" data-icon="${icon}" data-width="14"></span>
+                        </span>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex flex-wrap justify-between items-start gap-2 mb-1.5">
+                            <h4 class="text-sm font-semibold text-slate-900 truncate pr-4">${fix.title}</h4>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${badgeClass}">${fix.severity}</span>
+                        </div>
+                        <div class="bg-slate-50 rounded p-3 mb-2 border border-slate-100">
+                             <p class="text-xs text-slate-700 leading-relaxed font-medium">
+                                <span class="text-blue-600 font-semibold mr-1">Fix:</span> 
+                                ${fix.ai_suggestion}
+                             </p>
+                        </div>
+                         <div class="flex gap-2">
+                             ${fix.pages && fix.pages.url ? `
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white text-[10px] text-slate-400 border border-slate-200 shadow-sm">
+                                    <span class="iconify" data-icon="lucide:link" data-width="10"></span>
+                                    ${new URL(fix.pages.url).pathname}
+                                </span>
+                             ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    if (window.Iconify) window.Iconify.scan();
 }
