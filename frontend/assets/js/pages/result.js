@@ -31,13 +31,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         renderPages(pages);
 
-        // 4b. Fetch and Render Suggested Fixes (from ux_issues)
+        // 4b. Fetch and Render Issues (Identified + Suggested Fixes) from ux_issues
         try {
             const { issues } = await App.api.get(`/audits/${auditId}/issues`);
+
+            // Render Identified Issues
+            renderIdentifiedIssues(issues);
+
+            // Render Suggested Fixes
             const fixes = issues ? issues.filter(i => i.ai_suggestion) : [];
             renderSuggestedFixes(fixes);
+
         } catch (e) {
-            console.error("Failed to load suggested fixes", e);
+            console.error("Failed to load issues", e);
+            document.getElementById('issues-list').innerHTML = '<div class="p-6 text-center text-sm text-red-500">Failed to load issues.</div>';
             document.getElementById('suggested-fixes-list').innerHTML = '<div class="p-6 text-center text-sm text-red-500">Failed to load suggestions.</div>';
         }
 
@@ -139,15 +146,13 @@ function renderPages(pages) {
     // Reset grids class for screenshots if needed or ensure it has grid
     screenshotsContainer.className = 'grid grid-cols-2 md:grid-cols-4 gap-4 p-6 transition-all duration-300 ease-in-out';
 
-    let issueCount = 0;
     let screenshotCount = 0;
 
-    console.log('Pages with screenshots:', pages);
-
     if (!pages || pages.length === 0) {
-        issuesContainer.innerHTML = '<div class="p-6 text-center text-sm text-slate-500">No pages found.</div>';
-        // No screenshots to show either
         screenshotsContainer.innerHTML = '<div class="p-6 text-center text-sm text-slate-500">No screenshots found.</div>';
+        // Disable expand
+        const btn = document.querySelector('button[onclick="toggleSection(\'screenshots-grid\')"]');
+        if (btn) btn.disabled = true;
         return;
     }
 
@@ -165,68 +170,20 @@ function renderPages(pages) {
              `;
             screenshotsContainer.appendChild(img);
             screenshotCount++;
-        }
-
-        // 2. Issues
-        const review = page.ai_reviews && page.ai_reviews.length > 0 ? page.ai_reviews[0] : null;
-        let analysisData = null;
-
-        if (review && review.analysis) {
-            analysisData = review.analysis;
-        } else if (review && review.result) {
-            // Backward compat if using result column
-            try { analysisData = typeof review.result === 'string' ? JSON.parse(review.result) : review.result; } catch (e) { }
-        }
-
-        if (analysisData) {
-            const issues = analysisData.issues || [];
-            issues.forEach(issue => {
-                const severity = issue.severity ? issue.severity.toLowerCase() : 'info';
-
-                // Colors
-                let badgeClass = 'bg-slate-50 text-slate-600 border-slate-100';
-                if (severity === 'critical') badgeClass = 'bg-red-50 text-red-700 border-red-100';
-                else if (severity === 'high') badgeClass = 'bg-orange-50 text-orange-700 border-orange-100';
-                else if (severity === 'medium') badgeClass = 'bg-yellow-50 text-yellow-700 border-yellow-100';
-
-                const html = `
-                <div class="p-5 hover:bg-slate-50/50 transition-colors">
-                    <div class="flex items-start gap-3">
-                         <div class="mt-0.5">
-                            <span class="flex items-center justify-center w-5 h-5 rounded-full text-slate-500 bg-slate-100 border border-slate-200">
-                                <span class="iconify" data-icon="lucide:alert-circle" data-width="12"></span>
-                            </span>
-                        </div>
-                        <div class="flex-1">
-                            <div class="flex flex-wrap justify-between items-start gap-2 mb-1">
-                                <h4 class="text-sm font-medium text-slate-900">${issue.title}</h4>
-                                <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${badgeClass}">${severity}</span>
-                            </div>
-                            <p class="text-xs text-slate-500 leading-relaxed mb-2">${issue.description}</p>
-                            
-                            <div class="flex gap-2">
-                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 text-[10px] text-slate-500 border border-slate-200">
-                                    <span class="iconify" data-icon="lucide:link" data-width="10"></span>
-                                    ${new URL(page.url).pathname}
-                                </span>
-                                ${issue.category ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-[10px] text-slate-500 border border-slate-200">${issue.category}</span>` : ''}
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-                issuesContainer.insertAdjacentHTML('beforeend', html);
-                issueCount++;
-            });
+            screenshotsContainer.appendChild(img);
+            screenshotCount++;
         }
     });
 
     // Update Badge Counts
-    // Update Badge Counts
-    const issueBadge = document.getElementById('issues-count');
-    if (issueBadge) issueBadge.textContent = `(${issueCount})`;
-
     const screenshotBadge = document.getElementById('screenshots-count');
     if (screenshotBadge) screenshotBadge.textContent = `(${screenshotCount})`;
+
+    // Disable expand if 0
+    if (screenshotCount === 0) {
+        const btn = document.querySelector('button[onclick="toggleSection(\'screenshots-grid\')"]');
+        if (btn) btn.disabled = true;
+    }
 
     // Icons
     if (window.Iconify) window.Iconify.scan();
@@ -264,6 +221,68 @@ function calculateBreakdown(pages) {
     return breakdown;
 }
 
+function renderIdentifiedIssues(issues) {
+    const container = document.getElementById('issues-list');
+    if (!container) return;
+
+    // Update Badge
+    const badge = document.getElementById('issues-count');
+    if (badge) badge.textContent = issues ? `(${issues.length})` : '(0)';
+
+    // Empty State & Disable Button
+    if (!issues || issues.length === 0) {
+        container.innerHTML = `
+            <div class="p-8 text-center bg-slate-50/50">
+                <div class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-400 mb-3">
+                    <span class="iconify" data-icon="lucide:check-circle" data-width="16"></span>
+                </div>
+                <h4 class="text-sm font-medium text-slate-900 mb-1">No issues found</h4>
+                <p class="text-xs text-slate-500 max-w-xs mx-auto">This audit did not surface any critical UX issues.</p>
+            </div>
+        `;
+        const btn = document.querySelector('button[onclick="toggleSection(\'issues-list\')"]');
+        if (btn) btn.disabled = true;
+        return;
+    }
+
+    container.innerHTML = issues.map(issue => {
+        const severity = issue.severity ? issue.severity.toLowerCase() : 'info';
+        let badgeClass = 'bg-slate-50 text-slate-600 border-slate-100';
+        if (severity === 'critical') badgeClass = 'bg-red-50 text-red-700 border-red-100';
+        else if (severity === 'high') badgeClass = 'bg-orange-50 text-orange-700 border-orange-100';
+        else if (severity === 'medium') badgeClass = 'bg-yellow-50 text-yellow-700 border-yellow-100';
+
+        return `
+            <div class="p-5 hover:bg-slate-50/50 transition-colors">
+                <div class="flex items-start gap-3">
+                        <div class="mt-0.5">
+                        <span class="flex items-center justify-center w-5 h-5 rounded-full text-slate-500 bg-slate-100 border border-slate-200">
+                            <span class="iconify" data-icon="lucide:alert-circle" data-width="12"></span>
+                        </span>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex flex-wrap justify-between items-start gap-2 mb-1">
+                            <h4 class="text-sm font-medium text-slate-900">${issue.title}</h4>
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${badgeClass}">${severity}</span>
+                        </div>
+                        <p class="text-xs text-slate-500 leading-relaxed mb-2">${issue.description}</p>
+                        
+                        <div class="flex gap-2">
+                            ${issue.pages && issue.pages.url ? `
+                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 text-[10px] text-slate-500 border border-slate-200">
+                                <span class="iconify" data-icon="lucide:link" data-width="10"></span>
+                                ${new URL(issue.pages.url).pathname}
+                            </span>` : ''}
+                            ${issue.category ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-[10px] text-slate-500 border border-slate-200">${issue.category}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+    }).join('');
+
+    if (window.Iconify) window.Iconify.scan();
+}
+
 function renderSuggestedFixes(fixes) {
     const container = document.getElementById('suggested-fixes-list');
     if (!container) return;
@@ -271,6 +290,7 @@ function renderSuggestedFixes(fixes) {
     const fixesBadge = document.getElementById('fixes-count');
     if (fixesBadge) fixesBadge.textContent = fixes ? `(${fixes.length})` : '(0)';
 
+    // Empty State & Disable Button
     if (!fixes || fixes.length === 0) {
         container.innerHTML = `
             <div class="p-8 text-center bg-slate-50/50">
@@ -281,6 +301,8 @@ function renderSuggestedFixes(fixes) {
                 <p class="text-xs text-slate-500 max-w-xs mx-auto">Actionable recommendations will appear here as they are generated from the audit insights.</p>
             </div>
         `;
+        const btn = document.querySelector('button[onclick="toggleSection(\'suggested-fixes-list\')"]');
+        if (btn) btn.disabled = true;
         return;
     }
 
