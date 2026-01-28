@@ -136,23 +136,35 @@ function renderPages(pages) {
     issuesContainer.innerHTML = '';
     screenshotsContainer.innerHTML = '';
 
+    // Reset grids class for screenshots if needed or ensure it has grid
+    screenshotsContainer.className = 'grid grid-cols-2 md:grid-cols-4 gap-4 p-6 transition-all duration-300 ease-in-out';
+
+    let issueCount = 0;
+    let screenshotCount = 0;
+
+    console.log('Pages with screenshots:', pages);
+
     if (!pages || pages.length === 0) {
         issuesContainer.innerHTML = '<div class="p-6 text-center text-sm text-slate-500">No pages found.</div>';
+        // No screenshots to show either
+        screenshotsContainer.innerHTML = '<div class="p-6 text-center text-sm text-slate-500">No screenshots found.</div>';
         return;
     }
 
     pages.forEach(page => {
         // 1. Screenshot
-        if (page.screenshot_path) {
+        // FIX: API returns screenshot_url, not screenshot_path
+        if (page.screenshot_url) {
             const img = document.createElement('div');
             img.className = 'group relative rounded border border-slate-200 overflow-hidden bg-slate-100 aspect-[4/3]';
             img.innerHTML = `
-                 <img src="${page.screenshot_path}" loading="lazy" class="object-cover w-full h-full transition-transform group-hover:scale-105">
+                 <img src="${page.screenshot_url}" loading="lazy" class="object-cover w-full h-full transition-transform group-hover:scale-105" alt="Screenshot of ${page.url}">
                  <div class="absolute bottom-0 left-0 right-0 bg-white/90 backdrop-blur-sm p-1.5 border-t border-slate-200">
                      <p class="text-[10px] font-medium text-slate-700 truncate text-center">${new URL(page.url).pathname}</p>
                  </div>
              `;
             screenshotsContainer.appendChild(img);
+            screenshotCount++;
         }
 
         // 2. Issues
@@ -203,9 +215,17 @@ function renderPages(pages) {
                     </div>
                 </div>`;
                 issuesContainer.insertAdjacentHTML('beforeend', html);
+                issueCount++;
             });
         }
     });
+
+    // Update Badge Counts
+    const issueBadge = document.getElementById('issues-count');
+    if (issueBadge) issueBadge.textContent = issueCount;
+
+    const screenshotBadge = document.getElementById('screenshots-count');
+    if (screenshotBadge) screenshotBadge.textContent = screenshotCount;
 
     // Icons
     if (window.Iconify) window.Iconify.scan();
@@ -246,6 +266,9 @@ function calculateBreakdown(pages) {
 function renderSuggestedFixes(fixes) {
     const container = document.getElementById('suggested-fixes-list');
     if (!container) return;
+
+    const fixesBadge = document.getElementById('fixes-count');
+    if (fixesBadge) fixesBadge.textContent = fixes ? fixes.length : 0;
 
     if (!fixes || fixes.length === 0) {
         container.innerHTML = `
@@ -309,4 +332,37 @@ function renderSuggestedFixes(fixes) {
     }).join('');
 
     if (window.Iconify) window.Iconify.scan();
+    if (window.Iconify) window.Iconify.scan();
+}
+
+// Global scope for HTML access
+window.toggleSection = function (id) {
+    const el = document.getElementById(id);
+    const chevron = document.getElementById(id + '-chevron');
+    if (!el) return;
+
+    if (el.style.maxHeight === '0px' || el.classList.contains('hidden')) {
+        // Expand
+        el.classList.remove('hidden');
+        el.style.maxHeight = el.scrollHeight + 'px';
+        el.style.opacity = '1';
+        el.style.padding = id === 'screenshots-grid' ? '1.5rem' : ''; // Restore padding
+
+        if (chevron) {
+            chevron.style.transform = 'rotate(0deg)';
+        }
+    } else {
+        // Collapse
+        el.style.maxHeight = el.scrollHeight + 'px'; // Set explicit height first for transition
+        // Force reflow
+        el.offsetHeight;
+        el.style.maxHeight = '0px';
+        el.style.opacity = '0';
+        el.style.padding = '0'; // Remove padding to avoid gaps
+        setTimeout(() => el.classList.add('hidden'), 300); // Hide after transition
+
+        if (chevron) {
+            chevron.style.transform = 'rotate(-90deg)';
+        }
+    }
 }
