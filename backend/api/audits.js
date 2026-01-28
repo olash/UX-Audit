@@ -33,8 +33,23 @@ async function getUserFromRequest(req) {
     };
 }
 
+// Security Layer 1: Rate Limiting
+import rateLimit from 'express-rate-limit';
+const auditLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 5, // Limit each IP to 5 audit creations per minute
+    message: { error: "Too many audit requests. Please wait a minute." }
+});
+
+// Security Layer 2: Input Validation
+import { z } from 'zod';
+const AuditSchema = z.object({
+    url: z.string().url("Invalid URL format"),
+    // Optional params can be added here
+});
+
 // POST /api/audits - Start an audit
-router.post("/", async (req, res) => {
+router.post("/", auditLimiter, async (req, res) => {
     try {
         let user;
         try {
@@ -43,10 +58,15 @@ router.post("/", async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        const { url } = req.body;
-        if (!url) {
-            return res.status(400).json({ error: "URL is required" });
+        const validation = AuditSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({
+                error: "Invalid input",
+                details: validation.error.format()
+            });
         }
+
+        const { url } = validation.data;
 
         // --- USAGE CHECK REMOVED ---
         // const usage = await checkUsage(user.id);

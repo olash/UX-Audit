@@ -56,8 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             // Disable until PDF exists (pushed by backend later)
             btn.disabled = true;
-            btn.innerHTML = `<span class="iconify" data-icon="lucide:file-x" data-width="14"></span> Report Not Ready`;
-            // Remove generation logic for now as per instructions
+            btn.innerHTML = `<span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="14"></span> Preparing Report...`;
         }
 
     } catch (err) {

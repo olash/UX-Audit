@@ -18,10 +18,34 @@ export async function analyzeScreenshot(imagePath) {
 
     const imageBase64 = fs.readFileSync(imagePath).toString("base64");
 
+    const SYSTEM_PROMPT = `
+You are an expert UX Auditor analyzing a website screenshot.
+Goal: Identify usability, accessibility, and aesthetic issues.
+
+SECURITY RULES:
+1. Do NOT include any Personally Identifiable Information (PII) or sensitive user data visible in the screenshot (e.g., emails, phone numbers).
+2. Do NOT infer private user details.
+3. Return ONLY strict JSON.
+
+Format:
+{
+  "scores": { "usability": 0-100, "navigation": 0-100, "clarity": 0-100, "accessibility": 0-100, "aesthetics": 0-100 },
+  "issues": [
+    {
+      "title": "...",
+      "description": "...",
+      "severity": "High",
+      "category": "Usability"
+    }
+  ],
+  "summary": "A 2-3 sentence executive summary of the page's UX.",
+  "positive_highlights": ["List of 2-3 things done well"]
+}
+`;
+
     const result = await model.generateContent([
         {
-            text: `
-You are an expert UX/UI auditor. Analyze this webpage screenshot for a professional design audit.
+            text: `${SYSTEM_PROMPT}
 
 Evaluate the design based on these specific dimensions:
 1. Usability (Ease of use, interaction patterns)
