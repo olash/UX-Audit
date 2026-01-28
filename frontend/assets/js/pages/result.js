@@ -50,11 +50,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 5. Bind Download Button
         const btn = document.getElementById('btn-download');
-        if (project.report_url) {
+
+        // Strict check as requested
+        const canDownload = project.report_ready && project.report_url;
+
+        if (canDownload) {
             btn.disabled = false;
+            btn.innerHTML = `<span class="iconify" data-icon="lucide:download" data-width="16"></span> Download Report`;
             btn.onclick = () => window.open(project.report_url, '_blank');
         } else {
-            // Disable until PDF exists (pushed by backend later)
+            // "Preparing..." signals progress, not failure
             btn.disabled = true;
             btn.innerHTML = `<span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="14"></span> Preparing Report...`;
         }

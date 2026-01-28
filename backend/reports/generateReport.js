@@ -1,8 +1,10 @@
 // 1. Imports
 import { chromium } from 'playwright';
 import { supabase } from "../db/supabase.js";
+import { renderReportHTML } from './reportTemplate.js';
+import { DIMENSIONS } from '../ai/scoring.config.js';
 
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5500'; // Default to Live Server port
+// FRONTEND_URL removed as we generate HTML locally
 
 /**
  * Generates a PDF report using Playwright and uploads it to Supabase.
@@ -21,37 +23,59 @@ export async function generateReport(projectId) {
         });
         const page = await browser.newPage();
 
-        // 3. Navigate to Print Page
-        const targetUrl = `${FRONTEND_URL}/pages/print_report.html?id=${projectId}`;
-        console.log(`Navigating to: ${targetUrl}`);
+        // 2a. Fetch Data for Report
+        // Project
+        const { data: project } = await supabase.from('projects').select('*').eq('id', projectId).single();
+        if (!project) throw new Error(`Project ${projectId} not found`);
 
-        await page.goto(targetUrl, {
-            waitUntil: 'networkidle',
-            timeout: 60000
+        // Pages & Reviews
+        const { data: pages } = await supabase.from('pages')
+            .select(`id, url, screenshot_url, ai_reviews!ai_reviews_page_id_fkey(scores)`)
+            .eq('project_id', projectId);
+
+        // Issues
+        const pageIds = pages.map(p => p.id);
+        const { data: issues } = await supabase.from('ux_issues')
+            .select(`*, pages(url)`)
+            .in('page_id', pageIds);
+
+        // Calculate Breakdown (Re-calculate to ensure fresh data)
+        const dimTotals = {};
+        const dimCounts = {};
+        DIMENSIONS.forEach(d => { dimTotals[d] = 0; dimCounts[d] = 0; });
+
+        pages.forEach(page => {
+            const review = page.ai_reviews?.[0];
+            if (review && review.scores) {
+                Object.entries(review.scores).forEach(([key, val]) => {
+                    const k = key.toLowerCase();
+                    if (typeof val === 'number' && DIMENSIONS.includes(k)) {
+                        dimTotals[k] += val;
+                        dimCounts[k]++;
+                    }
+                });
+            }
         });
 
-        // 4. Generate PDF
+        const breakdown = {};
+        DIMENSIONS.forEach(d => {
+            if (dimCounts[d] > 0) breakdown[d] = Math.round(dimTotals[d] / dimCounts[d]);
+        });
+
+        // 3. Render HTML
+        const html = renderReportHTML({ project, pages, issues, breakdown });
+
+        // 4. Set Content
+        await page.setContent(html, {
+            waitUntil: 'networkidle'
+        });
+
+        // 5. Generate PDF
         const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
             margin: { top: '24px', bottom: '24px' }
         });
-
-        console.log(`PDF generated (${pdfBuffer.length} bytes)`);
-
-        // 5. Upload to Storage
-        const path = `reports/${projectId}.pdf`;
-        const { error: uploadError } = await supabase.storage
-            .from('reports') // Bucket must exist (created via SQL or dashboard)
-            .upload(path, pdfBuffer, {
-                contentType: 'application/pdf',
-                upsert: true,
-            });
-
-        if (uploadError) {
-            console.error("Storage upload error:", uploadError);
-            throw uploadError;
-        }
 
         // 6. Get Public URL
         const { data } = supabase.storage
