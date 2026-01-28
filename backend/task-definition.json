@@ -31,6 +31,9 @@
                 "retries": 3,
                 "startPeriod": 60
             },
+            "linuxParameters": {
+                "initProcessEnabled": true
+            },
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {

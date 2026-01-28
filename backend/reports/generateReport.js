@@ -10,6 +10,7 @@ const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5500'; // Def
  * @returns {Promise<string>} Public URL of the report
  */
 export async function generateReport(projectId) {
+    console.log('🧾 Starting PDF generation...');
     console.log(`Generating PDF report for project: ${projectId}`);
     let browser = null;
 

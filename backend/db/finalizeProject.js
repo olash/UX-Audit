@@ -1,5 +1,6 @@
 import { supabase } from "./supabase.js";
 import { DIMENSIONS } from "../ai/scoring.config.js";
+import { generateReport } from "../reports/generateReport.js";
 
 /**
  * Aggregates scores from all pages and finalizes the project.
@@ -96,6 +97,15 @@ export async function finalizeProject(projectId) {
 
         if (updateError) throw updateError;
         console.log("✅ Project successfully finalized.");
+
+        // 4. Trigger Async PDF Generation
+        // Using setImmediate to not block the current stack, though functionally 
+        // in Node this is still the same process. For true async in ECS, use SQS.
+        // But per instructions "Option A (Good for now)"
+        setImmediate(() => {
+            console.log("🚀 Triggering background PDF generation...");
+            generateReport(projectId).catch(err => console.error("Background PDF Gen Failed:", err));
+        });
 
     } catch (err) {
         console.error("❌ Failed to finalize project:", err.message);
