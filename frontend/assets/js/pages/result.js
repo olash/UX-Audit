@@ -221,11 +221,12 @@ function renderPages(pages) {
     });
 
     // Update Badge Counts
+    // Update Badge Counts
     const issueBadge = document.getElementById('issues-count');
-    if (issueBadge) issueBadge.textContent = issueCount;
+    if (issueBadge) issueBadge.textContent = `(${issueCount})`;
 
     const screenshotBadge = document.getElementById('screenshots-count');
-    if (screenshotBadge) screenshotBadge.textContent = screenshotCount;
+    if (screenshotBadge) screenshotBadge.textContent = `(${screenshotCount})`;
 
     // Icons
     if (window.Iconify) window.Iconify.scan();
@@ -268,7 +269,7 @@ function renderSuggestedFixes(fixes) {
     if (!container) return;
 
     const fixesBadge = document.getElementById('fixes-count');
-    if (fixesBadge) fixesBadge.textContent = fixes ? fixes.length : 0;
+    if (fixesBadge) fixesBadge.textContent = fixes ? `(${fixes.length})` : '(0)';
 
     if (!fixes || fixes.length === 0) {
         container.innerHTML = `
@@ -349,7 +350,7 @@ window.toggleSection = function (id) {
         el.style.padding = id === 'screenshots-grid' ? '1.5rem' : ''; // Restore padding
 
         if (chevron) {
-            chevron.style.transform = 'rotate(0deg)';
+            chevron.style.transform = 'rotate(180deg)';
         }
     } else {
         // Collapse
@@ -362,7 +363,7 @@ window.toggleSection = function (id) {
         setTimeout(() => el.classList.add('hidden'), 300); // Hide after transition
 
         if (chevron) {
-            chevron.style.transform = 'rotate(-90deg)';
+            chevron.style.transform = 'rotate(0deg)';
         }
     }
 }
