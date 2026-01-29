@@ -5,6 +5,7 @@ import { captureScreenshot, processScreenshot } from "./screenshot.js";
 import { savePage } from "../db/savePage.js";
 import { saveAnalysis } from "../db/saveAnalysis.js";
 import { analyzeScreenshot } from "../ai/gemini.js";
+import { supabase } from "../db/supabase.js";
 
 export async function crawlSite(startUrl, projectId, maxPages = 10) {
     ensureScreenshotDir();
@@ -37,6 +38,13 @@ export async function crawlSite(startUrl, projectId, maxPages = 10) {
 
             console.log(`🔎 Visiting (${pageCount + 1}/${maxPages}):`, normalized);
 
+            // Update DB: Crawling
+            await supabase.from('projects').update({
+                audit_status: 'crawling',
+                audit_step: 1,
+                audit_message: `Discovering page ${pageCount + 1}`
+            }).eq('id', projectId);
+
             try {
                 // Short timeout for demo purposes, adjust for production
                 await page.goto(normalized, { waitUntil: "domcontentloaded", timeout: 30000 });
@@ -62,6 +70,13 @@ export async function crawlSite(startUrl, projectId, maxPages = 10) {
                     // 3. AI Analysis
                     try {
                         console.log("🤖 Analyzing screenshot...");
+                        // Update DB: Analyzing
+                        await supabase.from('projects').update({
+                            audit_status: 'analyzing',
+                            audit_step: 2,
+                            audit_message: `Analyzing page ${pageCount} UX`
+                        }).eq('id', projectId);
+
                         const analysis = await analyzeScreenshot(localPath);
                         if (analysis) {
                             await saveAnalysis(pageData.id, analysis);

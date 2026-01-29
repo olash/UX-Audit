@@ -24,6 +24,15 @@ export async function runScraper(startUrl, existingProjectId = null, pageLimit =
             console.log(`ℹ️ Using existing Project ID: ${projectId}`);
         }
 
+        // 1b. Update Status: Crawling (Step 1/5)
+        await supabase.from('projects')
+            .update({
+                audit_status: 'crawling',
+                audit_step: 1,
+                audit_message: 'Starting crawler...'
+            })
+            .eq('id', projectId);
+
         // 2. Run Crawl
         await crawlSite(startUrl, projectId, pageLimit);
 

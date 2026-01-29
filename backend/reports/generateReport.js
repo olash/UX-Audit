@@ -1,10 +1,9 @@
 // 1. Imports
 import { chromium } from 'playwright';
+import path from 'path'; // Step 1: Import path correctly
 import { supabase } from "../db/supabase.js";
 import { renderReportHTML } from './reportTemplate.js';
 import { DIMENSIONS } from '../ai/scoring.config.js';
-
-// FRONTEND_URL removed as we generate HTML locally
 
 /**
  * Generates a PDF report using Playwright and uploads it to Supabase.
@@ -14,6 +13,16 @@ import { DIMENSIONS } from '../ai/scoring.config.js';
 export async function generateReport(projectId) {
     console.log('🧾 Starting PDF generation...');
     console.log(`Generating PDF report for project: ${projectId}`);
+
+    // Update Status: Generating Report (Step 4/5)
+    await supabase.from('projects')
+        .update({
+            audit_status: 'generating_report',
+            audit_step: 4,
+            audit_message: 'Generating PDF report...'
+        })
+        .eq('id', projectId);
+
     let browser = null;
 
     try {
@@ -77,10 +86,28 @@ export async function generateReport(projectId) {
             margin: { top: '24px', bottom: '24px' }
         });
 
+        console.log(`PDF generated (${pdfBuffer.length} bytes)`);
+
+        // 5b. Upload to Storage
+        // Use forward slashes for Storage, not system path separators
+        const storagePath = `reports/${projectId}.pdf`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('reports')
+            .upload(storagePath, pdfBuffer, {
+                contentType: 'application/pdf',
+                upsert: true,
+            });
+
+        if (uploadError) {
+            console.error("Storage upload error:", uploadError);
+            throw uploadError;
+        }
+
         // 6. Get Public URL
         const { data } = supabase.storage
             .from('reports')
-            .getPublicUrl(path);
+            .getPublicUrl(storagePath);
 
         const publicUrl = data.publicUrl;
 
@@ -89,8 +116,12 @@ export async function generateReport(projectId) {
             .from('projects')
             .update({
                 report_url: publicUrl,
-                status: 'completed', // Or keep as is, but ensuring ready state
-                report_ready: true   // If column exists, or just rely on URL
+                status: 'completed', // Legacy status
+                report_ready: true,
+                // Update Status: Completed (Step 5/5)
+                audit_status: 'completed',
+                audit_step: 5,
+                audit_message: 'Audit complete'
             })
             .eq('id', projectId);
 

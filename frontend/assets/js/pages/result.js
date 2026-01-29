@@ -5,6 +5,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     await Layout.load('nav-reports'); // Highlight 'Reports' in nav
     await Layout.loadContent('partials/result.html');
 
+    // ... (inside DOMContentLoaded)
+
     // 2. Get ID
     const urlParams = new URLSearchParams(window.location.search);
     const auditId = urlParams.get('id');
@@ -15,60 +17,155 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
     }
 
+    // NEW: Realtime Subscription
+    initRealtime(auditId);
+
     try {
-        // 3. Fetch Data
-        const project = await App.api.get(`/audits/${auditId}`);
-        const { pages } = await App.api.get(`/audits/${auditId}/results`);
-
-        // 4. Bind Data
-        bindProjectHeader(project);
-        renderScoreCircle(project.score);
-
-
-        // REFACTOR: Calculate breakdown from pages instead of project
-        const breakdown = calculateBreakdown(pages);
-        renderBreakdown(breakdown);
-
-        renderPages(pages);
-
-        // 4b. Fetch and Render Issues (Identified + Suggested Fixes) from ux_issues
-        try {
-            const { issues } = await App.api.get(`/audits/${auditId}/issues`);
-
-            // Render Identified Issues
-            renderIdentifiedIssues(issues);
-
-            // Render Suggested Fixes
-            const fixes = issues ? issues.filter(i => i.ai_suggestion) : [];
-            renderSuggestedFixes(fixes);
-
-        } catch (e) {
-            console.error("Failed to load issues", e);
-            document.getElementById('issues-list').innerHTML = '<div class="p-6 text-center text-sm text-red-500">Failed to load issues.</div>';
-            document.getElementById('suggested-fixes-list').innerHTML = '<div class="p-6 text-center text-sm text-red-500">Failed to load suggestions.</div>';
-        }
-
-        // 5. Bind Download Button
-        const btn = document.getElementById('btn-download');
-
-        // Strict check as requested
-        const canDownload = project.report_ready && project.report_url;
-
-        if (canDownload) {
-            btn.disabled = false;
-            btn.innerHTML = `<span class="iconify" data-icon="lucide:download" data-width="16"></span> Download Report`;
-            btn.onclick = () => window.open(project.report_url, '_blank');
-        } else {
-            // "Preparing..." signals progress, not failure
-            btn.disabled = true;
-            btn.innerHTML = `<span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="14"></span> Preparing Report...`;
-        }
-
+        await loadFullProjectData(auditId);
     } catch (err) {
         console.error(err);
         App.toast('error', 'Failed to load audit results');
     }
 });
+
+async function loadFullProjectData(auditId) {
+    // Fetch Project
+    const project = await App.api.get(`/audits/${auditId}`);
+    bindProjectHeader(project);
+    renderProgressBlock(project);
+
+    // Only fetch results/issues if ready (Step >= 3 implicitly, or just try and handle empty)
+    // Actually, we can fetch always, but if crawling, it might be empty.
+
+    // Fetch Results
+    try {
+        const { pages } = await App.api.get(`/audits/${auditId}/results`);
+        // REFACTOR: Calculate breakdown from pages instead of project
+        const breakdown = calculateBreakdown(pages);
+        renderBreakdown(breakdown);
+        renderScoreCircle(project.score); // Re-render score
+        renderPages(pages);
+    } catch (e) { console.warn("Results fetch skipped/failed", e); }
+
+    // Fetch Issues
+    try {
+        const { issues } = await App.api.get(`/audits/${auditId}/issues`);
+        renderIdentifiedIssues(issues);
+        const fixes = issues ? issues.filter(i => i.ai_suggestion) : [];
+        renderSuggestedFixes(fixes);
+    } catch (e) { console.warn("Issues fetch skipped/failed", e); }
+
+    // Bind Download Button
+    const btn = document.getElementById('btn-download');
+    const canDownload = project.report_ready && project.report_url;
+
+    if (canDownload) {
+        btn.disabled = false;
+        btn.innerHTML = `<span class="iconify" data-icon="lucide:download" data-width="16"></span> Download Report`;
+        btn.onclick = () => window.open(project.report_url, '_blank');
+        btn.className = "group inline-flex items-center gap-2 bg-slate-950 hover:bg-slate-800 text-white text-xs font-medium px-3 py-2 rounded shadow-sm transition-all";
+    } else {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="14"></span> Preparing Report...`;
+        btn.className = "group inline-flex items-center gap-2 bg-slate-100 text-slate-400 text-xs font-medium px-3 py-2 rounded border border-slate-200 cursor-not-allowed";
+    }
+}
+
+function initRealtime(projectId) {
+    const { createClient } = supabase;
+    // Assuming supabase client is available globally via window.supabase or App.supabase
+    // Since App.js likely imports it, we might need to access it. 
+    // Checking App.js: usually it exposes `App.supabase`? 
+    // If NOT exposed, we assume global `supabase` from CDN in HTML, OR we need to see how `App.js` connects.
+    // The user request shows `supabase.channel(...)`.
+    // I will assume `window.supabase` exists or `App.supabase` exists. 
+    // Let's try `App.supabase` first, falling back to `window.supabase`.
+
+    const client = window.supabase || (App.supabase);
+    if (!client) {
+        console.warn("Supabase client not found for realtime");
+        return;
+    }
+
+    console.log("🔌 Connecting Realtime for project:", projectId);
+
+    client.channel('project-progress')
+        .on(
+            'postgres_changes',
+            {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'projects',
+                filter: `id=eq.${projectId}`
+            },
+            async (payload) => {
+                console.log("⚡ Realtime Update:", payload.new);
+                const newProject = payload.new;
+
+                // Update Progress UI immediately
+                renderProgressBlock(newProject);
+                bindProjectHeader(newProject);
+
+                // If step changed significantly, refetch everything to update lists
+                // E.g. moving from crawling -> analyzing -> compiling
+                if (newProject.audit_step >= 2) {
+                    // Refetch to see incremental progress (e.g. new screenshots appearing)
+                    await loadFullProjectData(projectId);
+                }
+            }
+        )
+        .subscribe();
+}
+
+function renderProgressBlock(project) {
+    const container = document.getElementById('progress-container');
+    const title = document.getElementById('progress-title');
+    const stepText = document.getElementById('progress-step-text');
+    const bar = document.getElementById('progress-bar-fill');
+    const message = document.getElementById('progress-message');
+
+    if (!container) return;
+
+    if (project.audit_status === 'completed' || project.status === 'completed') {
+        container.classList.add('hidden');
+        return;
+    }
+
+    // Show it
+    container.classList.remove('hidden');
+
+    // Calc Step (1 to 5)
+    // Map status to step if audit_step is missing (legacy)
+    let step = project.audit_step || 0;
+    const status = project.audit_status || 'queued';
+
+    if (step === 0) {
+        if (status === 'crawling') step = 1;
+        if (status === 'analyzing') step = 2;
+        if (status === 'compiling') step = 3;
+        if (status === 'generating_report') step = 4;
+        if (status === 'completed') step = 5;
+    }
+
+    const percentage = Math.min((step / 5) * 100, 100);
+
+    stepText.textContent = `Step ${step}/5`;
+    bar.style.width = `${percentage}%`;
+    message.textContent = project.audit_message || 'Processing...';
+
+    // Status Text
+    if (status === 'crawling') title.textContent = 'Discovering pages';
+    else if (status === 'analyzing') title.textContent = 'Analyzing UX issues';
+    else if (status === 'compiling') title.textContent = 'Compiling insights';
+    else if (status === 'generating_report') title.textContent = 'Generating report';
+    else if (status === 'failed' || status === 'error') {
+        title.textContent = 'Audit Failed';
+        bar.classList.add('bg-red-500');
+        message.classList.add('text-red-600');
+    } else {
+        title.textContent = 'Audit in progress';
+    }
+}
 
 function bindProjectHeader(project) {
     if (!project) return;

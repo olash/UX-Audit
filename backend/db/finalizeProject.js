@@ -12,6 +12,15 @@ export async function finalizeProject(projectId) {
     try {
         console.log(`🏁 Finalizing project: ${projectId}`);
 
+        // Update Status: Compiling (Step 3/5)
+        await supabase.from('projects')
+            .update({
+                audit_status: 'compiling',
+                audit_step: 3,
+                audit_message: 'Compiling insights and scores'
+            })
+            .eq('id', projectId);
+
         // 1. Fetch analysis scores for all pages in this project
         // Joining pages -> ai_reviews using the foreign key relationship
         const { data: pages, error: pageError } = await supabase
