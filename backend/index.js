@@ -4,6 +4,8 @@ import path from "path";
 import { fileURLToPath } from 'url';
 import auditRoutes from "./api/audits.js";
 import userRoutes from "./api/users.js";
+import checkoutRouter from "./api/checkout.js";
+import webhooksRouter from "./api/webhooks.js";
 import dotenv from "dotenv";
 
 // Load environment variables from root
@@ -14,6 +16,10 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 app.set('trust proxy', 1); // Required for ECS/ALB to correctly identify IPs
+
+// Webhooks must handle their own body parsing (stream/raw)
+app.use("/api/webhooks", webhooksRouter);
+
 app.use(cors());
 app.use(express.json());
 
@@ -39,6 +45,7 @@ app.get("/health", (req, res) => {
 // Routes
 app.use("/api/audits", auditRoutes);
 app.use("/api", userRoutes); // Mount at /api so we get /api/me, /api/usage
+app.use("/api/checkout", checkoutRouter);
 
 app.listen(4000, "0.0.0.0", () => {
     console.log("Backend running on port 4000");

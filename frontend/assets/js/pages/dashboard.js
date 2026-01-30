@@ -6,9 +6,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 2. Load Layout
     // We pass 'nav-dashboard' to highlight the dashboard link in sidebar
     await Layout.load('nav-dashboard');
+    Layout.setBreadcrumbs([{ label: 'Dashboard' }]);
 
     // 3. Load Page Content
     await Layout.loadContent('partials/dashboard.html');
+
+    // --- REALTIME UPDATES ---
+    if (App.user) {
+        supabase
+            .channel('dashboard-updates')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'projects',
+                    filter: `user_id=eq.${App.user.id}`
+                },
+                (payload) => {
+                    // unexpected update? reload list
+                    window.fetchAudits();
+                }
+            )
+            .subscribe();
+    }
 
     // 4. Check if content loaded - The following logic depends on elements existing in DOM
     const list = document.getElementById('audit-list');
@@ -71,6 +92,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                     statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100 animate-pulse">Running</span>';
                 }
 
+                const displayUrl = audit.target_url ? new URL(audit.target_url).hostname : (audit.url || 'Unknown URL');
+
                 return `
                 <tr class="group border-b border-slate-50 last:border-0 hover:bg-slate-50/80 transition-colors cursor-pointer" onclick="window.location.href='/pages/Dashboard_Recent Audit Page [View Result].html?id=${audit.id}'">
                     <td class="py-3 px-6 whitespace-nowrap">
@@ -79,7 +102,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <span class="iconify" data-icon="lucide:globe" data-width="12"></span>
                             </div>
                             <div>
-                                <div class="text-sm font-medium text-slate-900">${audit.url}</div>
+                                <div class="text-sm font-medium text-slate-900">${displayUrl}</div>
                                 <div class="text-[10px] text-slate-400">${date}</div>
                             </div>
                         </div>

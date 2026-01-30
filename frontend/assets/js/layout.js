@@ -72,6 +72,37 @@ const Layout = {
         }
     },
 
+    /**
+     * Updates the breadcrumb navigation in the header
+     * @param {Array<{label: string, href?: string}>} items 
+     */
+    setBreadcrumbs: function (items) {
+        const container = document.getElementById('breadcrumbs');
+        if (!container) return;
+
+        if (!items || items.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const html = items.map((item, index) => {
+            const isLast = index === items.length - 1;
+            const content = item.href && !isLast
+                ? `<a href="${item.href}" class="hover:text-slate-900 transition-colors">${item.label}</a>`
+                : `<span class="font-medium text-slate-900">${item.label}</span>`;
+
+            if (index === 0) return content;
+
+            return `
+                <span class="iconify text-slate-300" data-icon="lucide:chevron-right" data-width="14"></span>
+                ${content}
+            `;
+        }).join('');
+
+        container.innerHTML = html;
+        if (window.Iconify) window.Iconify.scan(container);
+    },
+
     loadNotifications: async function () {
         try {
             const notifMenu = document.getElementById('notifMenu');
