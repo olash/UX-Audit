@@ -170,7 +170,7 @@ router.get("/", async (req, res) => {
 
         let query = supabase
             .from('projects')
-            .select('id, target_url, status, final_score, created_at')
+            .select('id, target_url, status, score, created_at')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false });
 

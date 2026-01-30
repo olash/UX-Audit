@@ -1,16 +1,15 @@
 import { supabase } from "../db/supabase.js";
 
+// Consolidated Limits matching frontend/assets/js/config/pricing.js
 const PLANS = {
-    free: { audits: 1, pages: 3 },
-    starter: { audits: 10, pages: 25 },
-    professional: { audits: 30, pages: 100 },
-    enterprise: { audits: 1000, pages: 1000 }
+    free: { audits: 2, pages: 3 },
+    starter: { audits: 10, pages: 10 },
+    pro: { audits: 30, pages: 30 },
+    team: { audits: 75, pages: 75 }
 };
 
 export async function checkUsage(userId) {
     // 1. Get User Plan
-    // Assuming 'profiles' table exists and has 'plan' column. 
-    // If not, default to 'free'.
     let planName = 'free';
 
     const { data: profile } = await supabase

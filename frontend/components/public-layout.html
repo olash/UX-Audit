@@ -1,0 +1,61 @@
+<!-- PUBLIC LAYOUT -->
+<div class="min-h-screen bg-white">
+    <!-- NAVIGATION -->
+    <nav class="fixed top-0 w-full z-50 border-b border-slate-200 glass bg-white/70 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <!-- Logo -->
+                <a href="/index.html" class="logo flex items-center gap-2">
+                    <span class="iconify" data-icon="lucide:scan-eye" data-width="22" data-stroke-width="2">
+                    </span>
+                    <span class="logo-text font-semibold text-lg tracking-tight text-slate-900">UX Audit</span>
+                </a>
+
+                <!-- Navigation -->
+                <nav class="hidden md:flex items-center gap-8">
+                    <a href="/index.html#how-it-works"
+                        class="text-sm font-medium text-slate-600 hover:text-slate-900">How it works</a>
+                    <a href="/index.html#features"
+                        class="text-sm font-medium text-slate-600 hover:text-slate-900">Features</a>
+                    <a href="Pricing.html" class="text-sm font-medium text-slate-900">Pricing</a>
+                </nav>
+
+                <!-- Auth Buttons -->
+                <div class="hidden md:flex items-center gap-4">
+                    <a href="Login.html" class="text-sm font-medium text-slate-600 hover:text-slate-900">Sign in</a>
+                    <a href="Signup.html"
+                        class="inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none bg-slate-900 text-white hover:bg-slate-900/90 h-9 px-4 py-2">
+                        Get Started
+                    </a>
+                </div>
+
+                <!-- Mobile Menu Toggle -->
+                <button id="publicMobileMenuToggle" class="md:hidden p-2 text-slate-600">
+                    <span class="iconify" data-icon="lucide:menu" data-width="24"></span>
+                </button>
+            </div>
+
+            <!-- Mobile Menu -->
+            <div id="publicMobileMenu"
+                class="hidden md:hidden absolute top-16 left-0 w-full bg-white border-b border-slate-200 p-4 shadow-lg z-50">
+                <nav class="flex flex-col gap-4">
+                    <a href="/index.html#how-it-works"
+                        class="text-sm font-medium text-slate-600 hover:text-slate-900">How it works</a>
+                    <a href="/index.html#features"
+                        class="text-sm font-medium text-slate-600 hover:text-slate-900">Features</a>
+                    <a href="Pricing.html" class="text-sm font-medium text-slate-900">Pricing</a>
+                    <hr class="border-slate-100">
+                    <a href="Login.html" class="text-sm font-medium text-slate-600 hover:text-slate-900">Sign in</a>
+                    <a href="Signup.html"
+                        class="inline-flex items-center justify-center rounded-lg text-sm font-medium transition-colors bg-slate-900 text-white hover:bg-slate-900/90 h-9 px-4 py-2">
+                        Get Started
+                    </a>
+                </nav>
+            </div>
+    </nav>
+
+    <!-- Content Injection -->
+    <main id="public-content" class="pt-16">
+        <!-- Views will be injected here -->
+    </main>
+</div>

@@ -1,5 +1,43 @@
 const Layout = {
     /**
+     * Loads the public/marketing layout into the #app container
+     */
+    loadPublic: async function () {
+        try {
+            const response = await fetch('../components/public-layout.html');
+            const html = await response.text();
+            document.getElementById('app').innerHTML = html;
+
+            // Mobile Menu Logic for Public Layout
+            const menuToggle = document.getElementById('publicMobileMenuToggle');
+            const menu = document.getElementById('publicMobileMenu');
+            if (menuToggle && menu) {
+                menuToggle.addEventListener('click', () => {
+                    menu.classList.toggle('hidden');
+                });
+            }
+
+            // Highlighting current page in public nav
+            const path = window.location.pathname;
+            const links = document.querySelectorAll('#publicMobileMenu a, nav a');
+            links.forEach(link => {
+                if (link.getAttribute('href') && path.includes(link.getAttribute('href').replace('.html', ''))) {
+                    link.classList.add('text-slate-900');
+                    link.classList.remove('text-slate-600');
+                }
+            });
+
+            // Initialize Icons
+            if (window.Iconify) window.Iconify.scan();
+
+            return true;
+        } catch (error) {
+            console.error("Failed to load public layout:", error);
+            return false;
+        }
+    },
+
+    /**
      * Loads the shared dashboard layout into the #app container
      * @param {string} activeNavId - ID of the nav item to highlight (e.g., 'nav-dashboard')
      */
@@ -114,7 +152,7 @@ const Layout = {
 
             if (recent.length > 0 && notifMenu) {
                 notifMenu.innerHTML = recent.map(a => `
-                    <div class="px-4 py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer" onclick="window.location.href='/pages/Dashboard_Recent Audit Page [View Result].html?id=${a.id}'">
+                    <div class="px-4 py-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer" onclick="window.location.href='/pages/Result.html?id=${a.id}'">
                         <p class="text-xs font-semibold text-slate-900">Audit Completed</p>
                         <p class="text-[10px] text-slate-500 truncate">${a.url}</p>
                     </div>

@@ -1,27 +1,59 @@
 export const PLANS = {
     free: {
         name: 'Free',
-        pages: 3,
+        auditLimit: 2,
+        pageLimit: 3,
         price: 0,
-        variantId: null // Free plans don't need Lemon Squeezy variant
+        variantId: null,
+        features: [
+            '2 audits / month',
+            '3 pages per audit',
+            'Buy credits for extra pages',
+            'No PDF exports',
+            'Personal use only'
+        ]
     },
     starter: {
         name: 'Starter',
-        pages: 10,
+        auditLimit: 10,
+        pageLimit: 10,
         price: 12,
-        variantId: 'variant_starter_123'
+        variantId: 'variant_starter_123',
+        features: [
+            '10 audits / month',
+            '10 pages per audit',
+            'Full PDF Reports',
+            'Commercial Use',
+            'Standard Support'
+        ]
     },
     pro: {
         name: 'Pro',
-        pages: 30,
+        auditLimit: 30,
+        pageLimit: 30,
         price: 29,
-        variantId: 'variant_pro_456'
+        variantId: 'variant_pro_456',
+        features: [
+            '30 audits / month',
+            '30 pages per audit',
+            'Advanced Insights',
+            'Priority Support',
+            'Commercial Use'
+        ]
     },
     team: {
         name: 'Team',
-        pages: 75,
+        auditLimit: 75,
+        pageLimit: 75,
         price: 59,
-        variantId: 'variant_team_789'
+        variantId: 'variant_team_789',
+        features: [
+            '75 audits / month',
+            '75 pages per audit',
+            'Unlimited Team Members',
+            'White-label Reports',
+            'Priority Support'
+        ]
     }
 };
 

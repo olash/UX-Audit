@@ -243,48 +243,81 @@ async function loadUsageStats() {
             const usage = await App.getUsage();
             const audits = await App.audits.getAll();
             const count = audits.length;
-            let limit = 50;
-            // Best effort usage limit detection from plan or usage API
-            if (usage.plan === 'pro') limit = 1000;
-            // If usage API returned a limit, use it
-            if (usage.pageLimit && usage.pageLimit > 50) {
-                // Note: usage.pageLimit is per-audit page limit, not total audits limit.
-                // So we stick to hardcoded plan limits for now unless API changes.
+            // Plan Limits (aligned with config/pricing.js)
+            const planKey = usage.plan || 'free';
+
+            // Hardcoded fallback if not importing PLANS
+            const PLANS_META = {
+                free: { name: 'Free', limit: 2, pages: 3 },
+                starter: { name: 'Starter', limit: 10, pages: 10 },
+                pro: { name: 'Pro', limit: 30, pages: 30 },
+                team: { name: 'Team', limit: 75, pages: 75 }
+            };
+            const currentPlan = PLANS_META[planKey] || PLANS_META.free;
+
+            // Update UI
+            if (document.getElementById('plan-name')) {
+                document.getElementById('plan-name').textContent = currentPlan.name;
+                document.getElementById('plan-badge').textContent = 'Active';
+                document.getElementById('plan-description').textContent =
+                    planKey === 'free' ? 'You are currently on the free tier. Upgrade to unlock more power.'
+                        : `You are on the ${currentPlan.name} plan. Thank you for your support!`;
             }
 
-            const subscription = await App.getSubscription();
+            // Usage
+            const monthlyLimit = currentPlan.limit;
+            const percentage = Math.min((usage.thisMonthCount / monthlyLimit) * 100, 100);
 
-            const percent = Math.min((count / limit) * 100, 100);
+            if (document.getElementById('stat-usage-text')) {
+                document.getElementById('stat-usage-text').textContent = usage.thisMonthCount;
+                document.getElementById('stat-usage-limit').textContent = `/ ${monthlyLimit}`;
+            }
+            if (document.getElementById('stat-usage-bar')) {
+                document.getElementById('stat-usage-bar').style.width = `${percentage}%`;
+                // Color change if near limit?
+                if (percentage > 90) document.getElementById('stat-usage-bar').classList.add('bg-red-500');
+            }
 
-            const txt = document.getElementById('stat-usage-text');
-            const bar = document.getElementById('stat-usage-bar');
-
-            if (txt) txt.innerText = `${count} / ${limit} Audits`;
-            if (bar) bar.style.width = `${percent}%`;
-
-            if (document.getElementById('current-plan') && subscription.plan) {
-                document.getElementById('current-plan').innerText = subscription.plan.toUpperCase();
+            if (document.getElementById('stat-pages-limit')) {
+                document.getElementById('stat-pages-limit').textContent = currentPlan.pages;
             }
 
             // Credits
-            const creditsEl = document.getElementById('credits-balance');
-            if (creditsEl) {
-                // Fetch latest profile because usage/subscription endpoint might not include credits yet
+            if (document.getElementById('credits-balance')) {
+                const credits = usage.credits || 0; // Usage API should return credits
+                // If usage doesn't have credits, we might need profile fetch. 
+                // App.getUsage() usually wraps /usage endpoint. 
+                // If /usage doesn't return credits, let's use profile fallback
                 const profile = await App.getProfile();
-                // Note: /api/me returns user_metadata etc. 
-                // Wait, default api/me in users.js returns user.user_metadata from AUTH.
-                // The 'credits' column is in 'profiles' table (public schema), NOT auth.users metadata.
-                // Backend /api/me needs update to return profile data or we fetch from supabase directly here.
-                // Because we are using RLS on profiles, we can fetch from supabase client.
-
-                const { data: profileData } = await supabase.from('profiles').select('credits').eq('id', App.user.id).single();
-                if (profileData) {
-                    creditsEl.innerText = profileData.credits || 0;
-                }
+                document.getElementById('credits-balance').textContent = profile.credits || 0;
             }
 
-        } catch (e) {
-            console.error("Failed to fetch usage stats", e);
+            // Button Toggle
+            const upgradeBtn = document.getElementById('upgrade-btn');
+            const billingBtn = document.getElementById('billing-btn');
+
+            if (planKey === 'free') {
+                if (upgradeBtn) upgradeBtn.style.display = 'inline-flex';
+                if (billingBtn) billingBtn.style.display = 'none';
+            } else {
+                // Paid plan
+                if (upgradeBtn) upgradeBtn.textContent = 'Change Plan';
+                if (billingBtn) billingBtn.style.display = 'inline-flex';
+            }
+
+        } catch (err) {
+            console.error('Failed to load usage stats:', err);
         }
-    }, 50);
+    }, 100);
 }
+
+// Global helper for billing portal
+window.openBillingPortal = async () => {
+    try {
+        const res = await App.api.post('/create-portal-session'); // Assuming this endpoint exists or will exist
+        if (res.url) window.location.href = res.url;
+        else alert("Billing portal not configured yet.");
+    } catch (e) {
+        alert("Could not open billing portal: " + e.message);
+    }
+};

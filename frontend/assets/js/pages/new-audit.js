@@ -47,7 +47,7 @@ async function startAudit() {
             if (res.auditId) {
                 // If the scraper is fast enough or async, we might see it running
                 // But usually we go to dashboard or the specific result page
-                window.location.href = `/pages/Dashboard_Recent Audit Page [View Result].html?id=${res.auditId}`;
+                window.location.href = `/pages/Result.html?id=${res.auditId}`;
             } else {
                 window.location.href = 'Dashboard_Homepage.html';
             }

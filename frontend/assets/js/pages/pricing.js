@@ -26,19 +26,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // We probably want a simple header for non-logged in users.
     // For now, let's detect auth.
 
+    // Layout Decision
     if (App.user) {
-        await Layout.load('nav-pricing'); // Highlight pricing if we had it in sidebar, otherwise just load layout
+        // Logged In -> Dashboard Layout
+        await Layout.load('nav-pricing');
     } else {
-        // Just empty #app or load a specific public layout?
-        // Current index.html handles public pages. 
-        // IF we are in /pages/Pricing.html, we are likely treating it as a standalone or app page.
-        // Let's reuse the Dashboard Layout for logged-in users, 
-        // AND create a simple fallback for public (or just redirect to index.html#pricing if not logged in?)
-        // Actually, the requirements say "No checkout unless logged in", "Free users see pricing but cannot buy".
-        // Let's try to load the dashboard layout if logged in, otherwise simpler view.
-        // But `Layout.load` fetches `dashboard-layout.html` which forces sidebar.
-        // Let's assume for this file, we use dashboard layout if logged in.
-        await Layout.load(''); // No active nav highlight or maybe 'nav-billing'
+        // Logged Out -> Public Layout
+        await Layout.loadPublic();
     }
 
     // 3. Load Content
@@ -61,6 +55,13 @@ function renderPlans() {
             ? 'bg-slate-900 text-white hover:bg-slate-800'
             : 'bg-slate-50 text-slate-900 border border-slate-200 hover:bg-slate-100';
 
+        const featuresList = plan.features.map(f => `
+            <li class="flex gap-2">
+                <span class="iconify text-emerald-500" data-icon="lucide:check" data-width="16"></span>
+                <span class="text-slate-600">${f}</span>
+            </li>
+        `).join('');
+
         return `
         <div class="border border-slate-200 rounded-xl p-6 flex flex-col bg-white ${key === 'pro' ? 'ring-2 ring-slate-900 relative' : ''}">
             ${key === 'pro' ? '<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs font-semibold px-3 py-1 rounded-full">Most Popular</div>' : ''}
@@ -70,12 +71,11 @@ function renderPlans() {
                     <span class="text-3xl font-bold tracking-tight">$${plan.price}</span>
                     <span class="text-slate-500 text-sm">/ month</span>
                 </div>
-                <p class="text-sm text-slate-500 mt-2">${plan.pages} pages / audit</p>
+                <p class="text-sm text-slate-500 mt-2">${plan.auditLimit} audits · ${plan.pageLimit} pages/audit</p>
             </div>
             
-            <ul class="space-y-3 text-sm text-slate-600 flex-1 mb-6">
-                <li class="flex gap-2"><span class="iconify text-emerald-500" data-icon="lucide:check" data-width="16"></span> All features included</li>
-                <li class="flex gap-2"><span class="iconify text-emerald-500" data-icon="lucide:check" data-width="16"></span> Priority support</li>
+            <ul class="space-y-3 text-sm flex-1 mb-6">
+                ${featuresList}
             </ul>
 
             <button onclick="${btnAction}" 

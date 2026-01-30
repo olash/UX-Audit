@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authenticating...</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Iconify -->
+    <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+</head>
+
+<body class="bg-slate-50 flex items-center justify-center min-h-screen">
+
+    <div class="text-center">
+        <div class="inline-block animate-spin text-slate-900 mb-4">
+            <span class="iconify" data-icon="lucide:loader-2" data-width="48"></span>
+        </div>
+        <h2 class="text-xl font-semibold text-slate-900">Verifying session...</h2>
+        <p class="text-slate-500 mt-2">Please wait while we log you in.</p>
+    </div>
+
+    <!-- Core Scripts -->
+    <script type="module" src="../assets/js/supabase.js"></script>
+    <script type="module">
+        import { supabase } from '../assets/js/supabase.js';
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log("Processing Auth Callback...");
+
+            // 1. Handle hash fragment (if Supabase returns access_token in hash)
+            // or code (pKCE flow)
+
+            // Supabase client usually handles session recovery automatically from URL hash
+            // We just need to wait for the session to be established.
+
+            const { data: { session }, error } = await supabase.auth.getSession();
+
+            if (error) {
+                console.error("Auth error:", error);
+                alert("Authentication failed: " + error.message);
+                window.location.href = 'Login.html';
+                return;
+            }
+
+            if (session) {
+                console.log("Session found:", session.user.email);
+
+                // 2. Intelligent Routing
+
+                // A. Check if user came from a specific flow (stored in localstorage?)
+                const redirect = localStorage.getItem('postLoginRedirect');
+                if (redirect) {
+                    localStorage.removeItem('postLoginRedirect');
+                    window.location.href = redirect;
+                    return;
+                }
+
+                // B. Check if new user or returning (Basic heuristic: Created recently?)
+                // Or just route to dashboard which is safe for everyone.
+                // The user requested: First-time -> /onboarding or /new-audit
+                // We don't have a dedicated onboarding yet, so "Create New Audit" is a good proxy.
+
+                const createdAt = new Date(session.user.created_at).getTime();
+                const now = new Date().getTime();
+                const isNew = (now - createdAt) < 60000; // Created within last minute?
+
+                if (isNew) {
+                    window.location.href = 'Create New Audit.html';
+                } else {
+                    window.location.href = 'Dashboard_Homepage.html';
+                }
+
+            } else {
+                // If no session found after parsing URL, it might be a weird state or just a direct visit.
+                // Listen for an event just in case it's processing async
+                const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                    if (event === 'SIGNED_IN' && session) {
+                        window.location.href = 'Dashboard_Homepage.html';
+                    }
+                });
+
+                // Fallback timeout
+                setTimeout(() => {
+                    // Try one more getSession
+                    supabase.auth.getSession().then(({ data }) => {
+                        if (data.session) {
+                            window.location.href = 'Dashboard_Homepage.html';
+                        } else {
+                            console.warn("No session established. Redirecting to login.");
+                            window.location.href = 'Login.html';
+                        }
+                    });
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+
+</html>
