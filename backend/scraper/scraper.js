@@ -34,13 +34,13 @@ export async function runScraper(startUrl, existingProjectId = null, pageLimit =
             .eq('id', projectId);
 
         // 2. Run Crawl
-        await crawlSite(startUrl, projectId, pageLimit);
+        const pagesScanned = await crawlSite(startUrl, projectId, pageLimit);
 
         // 3. Finalize (Calc Score + Mark Complete)
         await finalizeProject(projectId);
 
         console.log("✅ Audit workflow completed.");
-        return projectId;
+        return { projectId, pagesScanned };
 
     } catch (err) {
         console.error("❌ Scraper workflow failed:", err.message);

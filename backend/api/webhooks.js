@@ -4,129 +4,154 @@ import crypto from 'crypto';
 
 const router = express.Router();
 
-// Verify Signature Middleware
+// 1. Body Parsing for Signature Verification
+// Lemon Squeezy uses 'application/vnd.api+json'
+router.use(express.json({
+    type: ['application/vnd.api+json', 'application/json'],
+    verify: (req, res, buf) => {
+        req.rawBody = buf;
+    }
+}));
+
+// 2. Constants & Maps
+const PLAN_MAP = {
+    "variant_starter_123": "starter",
+    "variant_pro_456": "pro",
+    "variant_team_789": "team"
+};
+
+const CREDIT_MAP = {
+    "variant_credits_50": 50,
+    "variant_credits_200": 200,
+    "variant_credits_500": 500
+};
+
+// 3. Signature Verification Middleware
 const verifySignature = (req, res, next) => {
     const secret = process.env.LEMON_WEBHOOK_SECRET;
-    if (!secret) return next(); // Skip if not set (DEV)
+    if (!secret) {
+        console.warn("⚠️ LEMON_WEBHOOK_SECRET not set. Skipping signature verification.");
+        return next();
+    }
 
     const hmac = crypto.createHmac('sha256', secret);
-    const digest = Buffer.from(hmac.update(req.rawBody || JSON.stringify(req.body)).digest('hex'), 'utf8');
+    // Request body is already verified/captured by express.json above if type matches
+    const digest = Buffer.from(hmac.update(req.rawBody).digest('hex'), 'utf8');
     const signature = Buffer.from(req.get('X-Signature') || '', 'utf8');
 
     if (!crypto.timingSafeEqual(digest, signature)) {
+        console.error("Invalid Webhook Signature");
         return res.status(401).send('Invalid signature');
     }
     next();
 };
 
-// Assuming express.json() is NOT applied globally before this if we needed raw body.
-// But we are in a sub-router. If index.js mounts us AFTER express.json(), req.body is already parsed.
-// Verification might need raw body. For this task, we assume valid request or loose check for now.
-
-router.post('/', async (req, res) => {
+router.post('/', verifySignature, async (req, res) => {
     try {
         const payload = req.body;
-        const event = payload.meta.event_name;
-        const data = payload.data;
+
+        // LS Payload Structure: { meta: {...}, data: { type: ..., attributes: {...} } }
+        const { meta, data } = payload;
+        const eventName = meta.event_name;
         const attributes = data.attributes;
-        const custom_data = payload.meta.custom_data || attributes.custom_data;
-        // Note: LS custom_data location can vary depending on object type (order vs sub), 
-        // but typically passed throughcheckout_data.custom -> meta.custom_data
 
-        // Wait, User's code snippet says `data.attributes.custom_data.user_id` inside webhook?
-        // Let's stick to the prompt's provided snippet logic for robust matching.
-        // Prompt says: `const userId = data.attributes.custom_data.user_id;`
+        // Custom Data: usually in meta.custom_data for checkouts that resulted in this event
+        const customData = meta.custom_data || attributes.custom_data || {};
+        const userId = customData.user_id;
 
-        // BUT for subscriptions, custom data is often in meta. 
-        // Let's try both or careful check.
-        const userId = attributes.custom_data?.user_id || payload.meta.custom_data?.user_id;
+        console.log(`🔔 Webhook received: ${eventName} for User ${userId || 'Unknown'}`);
 
         if (!userId) {
-            console.warn('Webhook received without user_id:', event);
+            console.warn('⚠️ No user_id in webhook custom_data. Ignoring.');
             return res.json({ received: true });
         }
 
-        // 1. Credit Purchase (Order Created)
-        if (event === 'order_created') {
-            // Check metadata to see if it was a credit product
-            // Prompt says: In LemonSqueezy -> Metadata: { "type": "credits", ... }
-            // This 'metadata' is product metadata, not custom_data.
-            // Wait, "metadata" in LS webhooks is usually empty unless passed during checkout 
-            // OR if it's stored on the product itself? Default LS webhook payload doesn't deeply include product metadata effectively unless expanded.
-            // HOWEVER, user request says: "In LemonSqueezy -> Metadata (very important) ... This metadata is how your backend knows what was bought."
-            // This implies the Order Object `attributes.first_order_item.variant_name` or similar, OR 
-            // explicitly passing it during checkout?
-            // The prompt says "In LemonSqueezy -> Metadata", meaning configured ON THE PRODUCT DASHBOARD.
-            // To get this in webhook, we might need to look at `attributes.first_order_item` -> verify via ID?
-            // OR checks `meta.custom_data` if we passed it.
-            // The prompt's webhook code: `const metadata = data.attributes.metadata;`
-            // Let's assume the user knows LS returns this map if configured on product.
+        // A. Subscription Created / Updated
+        if (eventName === 'subscription_created' || eventName === 'subscription_updated') {
+            const variantId = attributes.variant_id;
+            const planName = PLAN_MAP[variantId + '']; // Ensure string key
 
-            // Wait, actually, `data.attributes.first_order_item` has product info.
-            // If the PROMPT Code snippet uses `data.attributes.metadata`, let's trust it.
-            // BUT standard LS webhook for `order_created` has `data.attributes` (order object).
+            if (planName) {
+                // Update User Plan
+                await supabase.from('profiles').update({
+                    plan: planName
+                }).eq('id', userId);
 
-            const metadata = attributes.metadata || {}; // Prompt logic
+                // Upsert Subscription
+                // We use 'lemon_subscription_id' as unique key if schema supports it
+                // Or just insert separate log. User asked to update subscriptions.
+                const { error } = await supabase.from('subscriptions').upsert({
+                    user_id: userId,
+                    lemon_subscription_id: data.id, // Subscription ID in LS
+                    plan: planName,
+                    status: attributes.status,
+                    renews_at: attributes.renews_at,
+                    updated_at: new Date()
+                }, { onConflict: 'lemon_subscription_id' }); // Assuming this constraint exists
 
-            if (metadata.type === 'credits') {
-                const credits = Number(metadata.credits);
+                if (error) console.error("Subscription Upsert Error:", error);
+                else console.log(`✅ User ${userId} updated to plan ${planName}`);
+            } else {
+                console.warn(`⚠️ Unknown plan variant: ${variantId}`);
+            }
+        }
 
-                // Add credits
-                await supabase.rpc('increment_credits', {
+        // B. Subscription Cancelled / Expired
+        if (eventName === 'subscription_cancelled' || eventName === 'subscription_expired') {
+            // Downgrade to free immediately per user request
+
+            // 1. Update Subscription Status
+            await supabase.from('subscriptions').update({
+                status: attributes.status,
+                updated_at: new Date()
+            }).eq('lemon_subscription_id', data.id);
+
+            // 2. Downgrade Profile
+            await supabase.from('profiles').update({
+                plan: 'free'
+            }).eq('id', userId);
+
+            console.log(`🚫 User ${userId} subscription cancelled - Downgraded to Free`);
+        }
+
+        // C. Order Created (Credits)
+        if (eventName === 'order_created') {
+            // Check first order item for variant
+            // LS 'order_created' payload usually has 'first_order_item' in attributes
+
+            // NOTE: first_order_item object structure: { variant_id, variant_name, ... }
+            const firstItem = attributes.first_order_item;
+            const variantId = firstItem ? firstItem.variant_id : null;
+
+            if (variantId && CREDIT_MAP[variantId + '']) {
+                const credits = CREDIT_MAP[variantId + ''];
+
+                // Add Credits RPC
+                const { error } = await supabase.rpc('increment_credits', {
                     uid: userId,
                     amount: credits
                 });
 
-                // Log transaction
+                if (error) {
+                    console.error("RPC Error increment_credits:", error);
+                    throw error;
+                }
+
+                // Log Transaction
                 await supabase.from('credit_transactions').insert({
                     user_id: userId,
                     amount: credits,
                     source: 'purchase',
-                    description: `Purchased ${credits} credits`
+                    description: `Purchased ${credits} credits`, // Optional
                 });
+
+                console.log(`💰 User ${userId} purchased ${credits} credits`);
             }
         }
 
-        // 2. Subscription Events
-        if (event === 'subscription_created' || event === 'subscription_updated') {
-            // For subscription, get plan metadata
-            // Need to ensure `data` is the subscription object.
-            // If event is subscription_*, data is subscription.
-
-            // Where is metadata? On the variant/product? 
-            // LS Subscription object doesn't inline product metadata usually.
-            // We might rely on Variant ID lookup if metadata isn't present.
-            // BUT trusting the prompt: `const metadata = data.attributes.metadata;`
-
-            const metadata = attributes.metadata || {};
-            const plan = metadata.plan || 'pro'; // Fallback logic?
-
-            await supabase.from('subscriptions').upsert({
-                user_id: userId,
-                lemon_subscription_id: data.id,
-                plan: plan,
-                status: attributes.status,
-                renews_at: attributes.renews_at,
-                updated_at: new Date()
-            }, { onConflict: 'lemon_subscription_id' });
-
-            // Update Profile
-            await supabase.from('profiles').update({
-                plan: plan
-            }).eq('id', userId);
-        }
-
-        if (event === 'subscription_cancelled' || event === 'subscription_expired') {
-            await supabase.from('profiles').update({ plan: 'free' }).eq('id', userId);
-
-            await supabase.from('subscriptions').update({
-                status: attributes.status
-            }).eq('lemon_subscription_id', data.id);
-        }
-
     } catch (e) {
-        console.error('Webhook processing failed', e);
-        return res.status(500).send('Internal Error');
+        console.error('❌ Webhook Error:', e);
+        return res.status(500).send('Server Error');
     }
 
     res.json({ received: true });

@@ -14,7 +14,7 @@ export async function checkUsage(userId) {
 
     const { data: profile } = await supabase
         .from('profiles')
-        .select('plan')
+        .select('plan, credits')
         .eq('id', userId)
         .single();
 
@@ -50,6 +50,7 @@ export async function checkUsage(userId) {
     return {
         allowed: true,
         pageLimit: limits.pages,
-        plan: planName
+        plan: planName,
+        credits: profile?.credits || 0 // Usage logic can now use this
     };
 }

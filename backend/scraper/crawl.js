@@ -109,4 +109,5 @@ export async function crawlSite(startUrl, projectId, maxPages = 10) {
     } finally {
         await browser.close();
     }
+    return pageCount;
 }

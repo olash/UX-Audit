@@ -4,6 +4,10 @@
     "outputDirectory": "frontend",
     "routes": [
         {
+            "src": "/api/(.*)",
+            "dest": "http://ux-audit-alb-1605700393.us-east-1.elb.amazonaws.com/api/$1"
+        },
+        {
             "handle": "filesystem"
         },
         {

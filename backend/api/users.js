@@ -22,9 +22,18 @@ router.get("/me", async (req, res) => {
         const user = await getUserFromRequest(req);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
+        // Fetch Profile for additional fields
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('plan, credits')
+            .eq('id', user.id)
+            .single();
+
         res.json({
             id: user.id,
             email: user.email,
+            plan: profile?.plan || 'free',
+            credits: profile?.credits || 0,
             user_metadata: user.user_metadata,
             created_at: user.created_at
         });

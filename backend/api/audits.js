@@ -3,7 +3,7 @@ import { createProject } from "../db/createProject.js";
 import { runScraper } from "../scraper/scraper.js";
 import { supabase } from "../db/supabase.js";
 import { generateReport } from "../reports/generateReport.js";
-// import { checkUsage } from "../utils/usage.js";
+import { checkUsage } from "../utils/usage.js";
 
 const router = express.Router();
 
@@ -83,9 +83,19 @@ router.post("/", auditLimiter, async (req, res) => {
         // 1. Subscription gives you 'pages' limit per audit.
         // 2. If you go over, you pay credits.
         // 3. We assume checking credits upfront is good UX (if they have 0 and low usage, warn?)
-        // For now, allow start.
 
-        console.log(`User ${user.id} starting audit.`);
+        const usage = await checkUsage(user.id);
+        if (!usage.allowed) {
+            return res.status(403).json({ error: usage.reason || 'Audit limit reached' });
+        }
+
+        // Effective Limit = Plan Pages + Available Credits
+        // This allows user to use credits to go deeper than plan limit
+        // We cap it reasonable (e.g. 500) to prevent abuse if they have tons of credits? 
+        // Or just let them burn it. Let's let them burn it.
+        const effectivePageLimit = (usage.pageLimit || 5) + (usage.credits || 0);
+
+        console.log(`User ${user.id} starting audit. Limit: ${effectivePageLimit} pages`);
 
         // 1. Create project with Initial State for Realtime
         const { data: project, error: createError } = await supabase
@@ -117,26 +127,37 @@ router.post("/", auditLimiter, async (req, res) => {
                 // We need to pass project ID to runScraper if it supports updating existing project.
                 // Inspecting scraper usage in previous file: `runScraper(url, project.id)`
 
-                const result = await runScraper(url, project.id);
+                const result = await runScraper(url, project.id, effectivePageLimit); // Pass effective limit
 
-                // NOTE: `runScraper` in this codebase might be handling the DB updates for status?
-                // If so, we just need to handle Post-Audit Credit Deduction here.
-                // Assuming runScraper returns { pageCount: N, ... } or similar.
-                // If runScraper is void/async fire-and-forget, we can't easily wait for result here without refactoring scraper.
-                // However, "Start (async) scrape with Default Page Limit" implies we wait?
-                // The previous code had `.catch(...)` which implies it returns a promise.
+                // Credit Deduction Logic
+                const pagesScanned = result.pagesScanned || 0;
+                // We need to know the User's free page limit again. 
+                // We just used 'effectivePageLimit'. 
+                // If we want to be precise: 'usage.pageLimit' was the Plan Limit.
+                const freePages = usage.pageLimit || 0;
 
-                // Let's assume runScraper updates status to 'completed' or we do it?
-                // If runScraper handles 'completed' status, we might miss the credit deduction hook unless we wait.
-                // Ideally scraper returns stats.
+                // Only deduct if they exceeded plan limit
+                const creditsToDeduct = Math.max(0, pagesScanned - freePages);
 
-                // For this Task, since we can't fully rewrite scraper internals without viewing:
-                // We will trust runScraper updates the DB.
-                // TO IMPLEMENT CREDITS: We need to know how many pages were scanned.
-                // We can query the `pages` table count associated with project ID after scraper finishes.
+                if (creditsToDeduct > 0) {
+                    console.log(`💸 Deducting ${creditsToDeduct} credits for User ${user.id}`);
+                    const { error: creditError } = await supabase.rpc('increment_credits', {
+                        uid: user.id,
+                        amount: -creditsToDeduct
+                    });
 
-                // Wait for scraper?
-                // If scraper takes long, this async block keeps running. Node process must stay alive.
+                    if (creditError) {
+                        console.error("Failed to deduct credits:", creditError);
+                    } else {
+                        // Log Transaction
+                        await supabase.from('credit_transactions').insert({
+                            user_id: user.id,
+                            amount: -creditsToDeduct,
+                            source: 'system',
+                            description: `Audit overage: ${pagesScanned} pages scanned`
+                        });
+                    }
+                }
 
             } catch (err) {
                 console.error("Background audit error:", err);
