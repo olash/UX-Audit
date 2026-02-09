@@ -50,17 +50,18 @@
                         <span class="iconify" data-icon="lucide:zap" data-width="16"></span>
                     </div>
                     <div>
-                        <p class="text-xs font-semibold text-white">Pro Plan</p>
-                        <p class="text-[10px] text-slate-400">42/50 Audits used</p>
+                        <p class="text-xs font-semibold text-white" id="sidebar-plan-name">Loading...</p>
+                        <p class="text-[10px] text-slate-400" id="sidebar-plan-usage">...</p>
                     </div>
                 </div>
                 <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden mb-3">
-                    <div class="h-full bg-emerald-500 w-[84%] rounded-full"></div>
+                    <div class="h-full bg-emerald-500 w-[0%] rounded-full" id="sidebar-plan-progress" style="width: 0%">
+                    </div>
                 </div>
-                <button
-                    class="w-full py-1.5 text-[10px] font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded transition-colors border border-slate-700">
+                <a href="/pages/Pricing.html" id="sidebar-upgrade-btn"
+                    class="block w-full text-center py-1.5 text-[10px] font-medium text-slate-300 bg-slate-800 hover:bg-slate-700 rounded transition-colors border border-slate-700">
                     Upgrade Limit
-                </button>
+                </a>
             </div>
         </div>
     </aside>

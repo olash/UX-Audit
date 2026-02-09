@@ -201,12 +201,6 @@ const Layout = {
         const fallback = document.getElementById("menuAvatarFallback");
 
         if (img && fallback) {
-            // Handle broken image edge-case
-            img.onerror = () => {
-                img.classList.add("hidden");
-                fallback.classList.remove("hidden");
-            };
-
             if (avatarUrl) {
                 img.src = avatarUrl;
                 img.classList.remove("hidden");
@@ -216,6 +210,46 @@ const Layout = {
                 fallback.classList.remove("hidden");
                 img.classList.add("hidden");
             }
+        }
+
+        // Trigger Sidebar Update
+        this.updateSidebarPlan();
+    },
+
+    updateSidebarPlan: async function () {
+        try {
+            const token = App.session?.access_token;
+            if (!token) return;
+
+            const response = await fetch('/api/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) return;
+
+            const data = await response.json();
+            // Data structure expected: { id, email, plan: 'free', credits: 0, ... }
+            // Note: /api/me currently returns profile data from `users.js`
+
+            // We need usage stats (audits used). /api/me might not have it.
+            // Let's assume we need to fetch it or /api/me has it.
+            // If not, we'll just show plan name for now.
+            // Ideally /api/me should return { plan, usage: { used: X, limit: Y } }
+
+            const planName = (data.plan || 'Free').charAt(0).toUpperCase() + (data.plan || 'Free').slice(1) + ' Plan';
+            const credits = data.credits || 0;
+
+            const nameEl = document.getElementById('sidebar-plan-name');
+            const usageEl = document.getElementById('sidebar-plan-usage');
+
+            if (nameEl) nameEl.textContent = planName;
+            if (usageEl) usageEl.textContent = `${credits} Credits available`;
+
+            // Note: To show "Audits used", we'd need to count them. 
+            // For now, showing Credits is more useful for the credit-based system.
+
+        } catch (e) {
+            console.error("Failed to update sidebar", e);
         }
     },
 
