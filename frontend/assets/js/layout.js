@@ -227,12 +227,18 @@ const Layout = {
         try {
             const response = await fetch(partialPath);
             const html = await response.text();
-            document.getElementById('dashboard-content').innerHTML = html;
 
-            if (window.Iconify) window.Iconify.scan();
+            const container = document.getElementById('dashboard-content') || document.getElementById('public-content');
+            if (container) {
+                container.innerHTML = html;
+                if (window.Iconify) window.Iconify.scan();
+            } else {
+                console.error('No content container found (#dashboard-content or #public-content)');
+            }
         } catch (error) {
             console.error(`Failed to load content from ${partialPath}:`, error);
-            document.getElementById('dashboard-content').innerHTML = `<div class="text-red-500">Failed to load content.</div>`;
+            const container = document.getElementById('dashboard-content') || document.getElementById('public-content');
+            if (container) container.innerHTML = `<div class="text-red-500">Failed to load content.</div>`;
         }
     }
 }
