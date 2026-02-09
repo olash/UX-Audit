@@ -1,6 +1,7 @@
 import { supabase } from "../db/supabase.js";
 
 // Consolidated Limits matching frontend/assets/js/config/pricing.js
+// Consolidated Limits matching frontend/assets/js/config/pricing.js
 const PLANS = {
     free: { audits: 2, pages: 3 },
     starter: { audits: 10, pages: 10 },

@@ -271,7 +271,30 @@ router.get("/:id/results", async (req, res) => {
 // GET /api/audits/:id/report - Get PDF URL
 router.get("/:id/report", async (req, res) => {
     try {
+        let user;
+        try {
+            user = await getUserFromRequest(req);
+        } catch (e) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
         const { id } = req.params;
+
+        // Check Plan
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('plan')
+            .eq('id', user.id)
+            .single();
+
+        const plan = (profile?.plan || 'free').toLowerCase();
+
+        if (plan === 'free') {
+            return res.status(403).json({
+                error: "Upgrade Required",
+                message: "PDF reports are available on Starter plans and above."
+            });
+        }
 
         // Generate (or fetch existing) PDF URL
         const pdfUrl = await generateReport(id);
