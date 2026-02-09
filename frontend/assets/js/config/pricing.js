@@ -17,8 +17,8 @@ export const PLANS = {
         name: 'Starter',
         auditLimit: 10,
         pageLimit: 10,
-        price: 12,
-        variantId: '814375', // Starter
+        price: 9.99,
+        variantId: '1292487', // Correct ID for Starter
         features: [
             '10 audits / month',
             '10 pages per audit',
@@ -32,7 +32,7 @@ export const PLANS = {
         auditLimit: 30,
         pageLimit: 30,
         price: 29,
-        variantId: '814573', // Pro
+        variantId: '1284104', // Correct ID for Pro (Default)
         features: [
             '30 audits / month',
             '30 pages per audit',
@@ -46,7 +46,7 @@ export const PLANS = {
         auditLimit: 75,
         pageLimit: 75,
         price: 59,
-        variantId: '814574', // Team
+        variantId: '1284106', // Correct ID for Team (Default)
         features: [
             '75 audits / month',
             '75 pages per audit',
