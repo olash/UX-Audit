@@ -45,6 +45,14 @@ router.post('/', async (req, res) => {
             }
         };
 
+        // Defensive Logging (Temporary)
+        console.log("--- DEBUG CHECKOUT ---");
+        console.log("Using Env Vars:");
+        console.log("STORE_ID:", process.env.STORE_ID || "MISSING");
+        console.log("LEMON_API_KEY Present:", !!process.env.LEMON_API_KEY);
+        console.log("LEMON_API_KEY Length:", process.env.LEMON_API_KEY ? process.env.LEMON_API_KEY.length : 0);
+        console.log("----------------------");
+
         const response = await fetch('https://api.lemonsqueezy.com/v1/checkouts', {
             method: 'POST',
             headers: {
