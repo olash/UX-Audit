@@ -15,15 +15,15 @@ router.use(express.json({
 
 // 2. Constants & Maps
 const PLAN_MAP = {
-    "variant_starter_123": "starter",
-    "variant_pro_456": "pro",
-    "variant_team_789": "team"
+    "814375": "starter",
+    "814573": "pro",
+    "814574": "team"
 };
 
 const CREDIT_MAP = {
-    "variant_credits_50": 50,
-    "variant_credits_200": 200,
-    "variant_credits_500": 500
+    "1284150": 50,
+    "1292508": 200,
+    "1292509": 500
 };
 
 // 3. Signature Verification Middleware
