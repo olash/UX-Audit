@@ -70,24 +70,44 @@ router.post("/", auditLimiter, async (req, res) => {
         const { url } = validation.data;
 
         // --- STRICT PLAN & CREDIT ENFORCEMENT ---
-        // 1. Fetch User Profile & Plan
+        // 1. Fetch User Profile & Plan (MANDATORY)
         const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('plan, credits')
             .eq('id', user.id)
             .single();
 
-        if (profileError) {
-            console.error("Profile fetch error:", profileError);
-            throw new Error("Could not fetch user profile");
+        if (profileError || !profile) {
+            console.error("❌ Profile verify failed:", profileError);
+            return res.status(403).json({ error: "Unable to verify user plan. Audit blocked." });
         }
 
-        const planName = (profile.plan || 'free').toLowerCase();
-        const entitlements = PLAN_ENTITLEMENTS[planName] || PLAN_ENTITLEMENTS.free;
+        const planName = (profile.plan || '').toLowerCase();
+        const entitlements = PLAN_ENTITLEMENTS[planName];
+
+        if (!entitlements) {
+            console.error(`❌ Invalid plan '${planName}' for user ${user.id}`);
+            return res.status(403).json({ error: "Invalid plan. Audit blocked." });
+        }
 
         console.log(`Checking plan entitlements for User ${user.id} (${planName})...`);
 
-        // 2. Enforce Audit Permission (Monthly Limit)
+        // 2. Concurrency Check (Idempotency Guard)
+        // Prevent launching multiple audits for the same URL simultaneously
+        const { data: existingAudit } = await supabase
+            .from('projects')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('target_url', url)
+            .eq('status', 'running')
+            .maybeSingle();
+
+        if (existingAudit) {
+            console.warn(`❌ blocked duplicate audit for ${url}`);
+            return res.status(409).json({ error: "Audit already running for this URL." });
+        }
+
+        // 3. Enforce Audit Permission (Monthly Limit)
         // We need to count audits used this month
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
@@ -108,7 +128,7 @@ router.post("/", auditLimiter, async (req, res) => {
             });
         }
 
-        // 3. Enforce Page Limit Base
+        // 4. Enforce Page Limit Base
         // The previous logic allowed "effectivePageLimit" to be infinite if credits allowed.
         // We will keep that hybrid model BUT we must ensure they have at least 1 page allowed.
 

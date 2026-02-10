@@ -7,9 +7,9 @@ import { supabase } from "../db/supabase.js";
  * Orchestrates the scraping process.
  * @param {string} startUrl 
  * @param {string|null} existingProjectId 
- * @param {number} pageLimit - Max pages to crawl
+ * @param {number} pageLimit - Max pages to crawl (Must be dynamic based on User Plan)
  */
-export async function runScraper(startUrl, existingProjectId = null, pageLimit = 10) {
+export async function runScraper(startUrl, existingProjectId = null, pageLimit = 3) {
     console.log(`🚀 Starting scraper for: ${startUrl} (Limit: ${pageLimit} pages)`);
 
     let projectId = existingProjectId;

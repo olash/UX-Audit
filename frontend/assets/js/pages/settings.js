@@ -1,4 +1,5 @@
 import { supabase } from '../supabase.js';
+import { PLANS } from '../config/pricing.js';
 
 let initialProfile = {};
 
@@ -245,15 +246,9 @@ async function loadUsageStats() {
             const count = audits.length;
             // Plan Limits (aligned with config/pricing.js)
             const planKey = usage.plan || 'free';
-
-            // Hardcoded fallback if not importing PLANS
-            const PLANS_META = {
-                free: { name: 'Free', limit: 2, pages: 3 },
-                starter: { name: 'Starter', limit: 10, pages: 10 },
-                pro: { name: 'Pro', limit: 30, pages: 30 },
-                team: { name: 'Team', limit: 75, pages: 75 }
-            };
-            const currentPlan = PLANS_META[planKey] || PLANS_META.free;
+            // Use imported PLANS or fallback
+            // Note: We need to import PLANS at the top of the file
+            const currentPlan = PLANS[planKey] || PLANS.free;
 
             // Update UI
             if (document.getElementById('plan-name')) {
@@ -262,10 +257,15 @@ async function loadUsageStats() {
                 document.getElementById('plan-description').textContent =
                     planKey === 'free' ? 'You are currently on the free tier. Upgrade to unlock more power.'
                         : `You are on the ${currentPlan.name} plan. Thank you for your support!`;
+
+                // Dynamic Feature List
+                if (document.getElementById('plan-feature-audits')) {
+                    document.getElementById('plan-feature-audits').textContent = currentPlan.auditLimit;
+                }
             }
 
             // Usage
-            const monthlyLimit = currentPlan.limit;
+            const monthlyLimit = currentPlan.auditLimit;
             const percentage = Math.min((usage.thisMonthCount / monthlyLimit) * 100, 100);
 
             if (document.getElementById('stat-usage-text')) {
@@ -279,7 +279,7 @@ async function loadUsageStats() {
             }
 
             if (document.getElementById('stat-pages-limit')) {
-                document.getElementById('stat-pages-limit').textContent = currentPlan.pages;
+                document.getElementById('stat-pages-limit').textContent = currentPlan.pageLimit;
             }
 
             // Credits
