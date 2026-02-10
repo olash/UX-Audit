@@ -34,6 +34,25 @@ async function getUserFromRequest(req) {
     };
 }
 
+// Helper: Assert Audit Permission (Hard Gate)
+function assertCanRunAudit(planName, entitlements, credits, auditsUsed) {
+    if (!entitlements) {
+        throw new Error("Invalid plan. Audit blocked.");
+    }
+
+    if (auditsUsed >= entitlements.auditsPerMonth) {
+        throw new Error(`Monthly audit limit reached. Your plan allows ${entitlements.auditsPerMonth} audits.`);
+    }
+
+    // Return the allowed page limit to be used by the scraper
+    return {
+        baseLimit: entitlements.maxPagesPerAudit,
+        // We allow credits to extend the limit, but the *base* right to audit is validated here.
+        // If strict "Page Limit" check is needed BEFORE crawl, we do it here:
+        // if (requestedPages > entitlements.maxPagesPerAudit + credits) throw ...
+    };
+}
+
 // Security Layer 1: Rate Limiting
 import rateLimit from 'express-rate-limit';
 const auditLimiter = rateLimit({
@@ -120,13 +139,15 @@ router.post("/", auditLimiter, async (req, res) => {
 
         if (countError) throw countError;
 
-        if (auditsUsed >= entitlements.auditsPerMonth) {
-            console.log(`Audit denied: Plan limit reached (${auditsUsed}/${entitlements.auditsPerMonth})`);
-            return res.status(403).json({
-                error: "Monthly audit limit reached",
-                message: `Your plan allows ${entitlements.auditsPerMonth} audits per month. Please upgrade.`
-            });
+        // --- HARD GATE: ASSERT CAN RUN AUDIT ---
+        try {
+            assertCanRunAudit(planName, entitlements, profile.credits || 0, auditsUsed);
+        } catch (gateError) {
+            console.error(`⛔ Audit Gate Blocked User ${user.id}: ${gateError.message}`);
+            return res.status(403).json({ error: gateError.message });
         }
+
+        console.log(`✅ Audit Gate Passed: ${planName} (${auditsUsed}/${entitlements.auditsPerMonth})`);
 
         // 4. Enforce Page Limit Base
         // The previous logic allowed "effectivePageLimit" to be infinite if credits allowed.
@@ -354,9 +375,11 @@ router.get("/:id/report", async (req, res) => {
             .eq('id', user.id)
             .single();
 
-        const plan = (profile?.plan || 'free').toLowerCase();
+        const planName = (profile?.plan || 'free').toLowerCase();
+        const entitlements = PLAN_ENTITLEMENTS[planName];
 
-        if (plan === 'free') {
+        if (!entitlements || !entitlements.canGenerateReports) {
+            console.warn(`⛔ PDF blocked for user ${user.id} (Plan: ${planName})`);
             return res.status(403).json({
                 error: "Upgrade Required",
                 message: "PDF reports are available on Starter plans and above."
