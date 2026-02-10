@@ -47,12 +47,32 @@ document.addEventListener('DOMContentLoaded', async () => {
             const data = await App.audits.getAll();
 
             // Update Stats
+            // Update Stats
             const stats = App.audits.calculateStats(data);
+
+            // Fetch Profile for Plan Limits
+            let planLimit = 2; // Default Free
+            try {
+                const profile = await App.getProfile();
+                const { PLANS } = await import('../config/pricing.js');
+                const planName = (profile.plan || 'free').toLowerCase();
+                const plan = PLANS[planName] || PLANS.free;
+                planLimit = plan.auditLimit;
+            } catch (e) { console.warn("Could not fetch plan limits", e); }
+
             const elTotal = document.getElementById('stat-total');
             const elActive = document.getElementById('stat-active');
             const elCompleted = document.getElementById('stat-completed');
 
-            if (elTotal) elTotal.innerText = stats.total;
+            if (elTotal) {
+                // Show Usage / Limit
+                elTotal.innerHTML = `
+                    <div class="flex items-baseline gap-1">
+                        <span>${stats.thisMonthCount}</span>
+                        <span class="text-sm text-slate-400 font-normal">/ ${planLimit} used</span>
+                    </div>
+                `;
+            }
             if (elActive) elActive.innerText = stats.active;
             if (elCompleted) elCompleted.innerText = stats.completed;
 

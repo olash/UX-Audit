@@ -1,13 +1,6 @@
 import { supabase } from "../db/supabase.js";
 
-// Consolidated Limits matching frontend/assets/js/config/pricing.js
-// Consolidated Limits matching frontend/assets/js/config/pricing.js
-const PLANS = {
-    free: { audits: 2, pages: 3 },
-    starter: { audits: 10, pages: 10 },
-    pro: { audits: 30, pages: 30 },
-    team: { audits: 75, pages: 75 }
-};
+import { PLAN_ENTITLEMENTS } from "../config/pricing.js";
 
 export async function checkUsage(userId) {
     // 1. Get User Plan
@@ -23,7 +16,13 @@ export async function checkUsage(userId) {
         planName = profile.plan.toLowerCase();
     }
 
-    const limits = PLANS[planName] || PLANS.free;
+    const entitlements = PLAN_ENTITLEMENTS[planName] || PLAN_ENTITLEMENTS.free;
+    const limits = {
+        audits: entitlements.auditsPerMonth,
+        pages: entitlements.maxPagesPerAudit
+    };
+
+    console.log(`[Usage Check] User: ${userId} | Plan: ${planName} | Credits: ${profile?.credits} | Limits: ${JSON.stringify(limits)}`);
 
     // 2. Count Audits this month
     const now = new Date();

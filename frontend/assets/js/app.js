@@ -124,7 +124,15 @@ const App = {
         async get(endpoint) {
             const headers = await this.getAuthHeaders();
             const res = await fetch(`${this.baseUrl}/api${endpoint}`, { headers });
-            if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
+            if (!res.ok) {
+                let errorMsg = res.statusText;
+                try {
+                    const errorData = await res.json();
+                    if (errorData.message) errorMsg = errorData.message;
+                    else if (errorData.error) errorMsg = errorData.error;
+                } catch (e) { /* ignore json parse error */ }
+                throw new Error(errorMsg);
+            }
             return res.json();
         },
 
@@ -138,8 +146,17 @@ const App = {
             });
 
             if (!res.ok) {
-                const text = await res.text();
-                throw new Error(`API Error: ${text}`);
+                let errorMsg = res.statusText;
+                try {
+                    const errorData = await res.json();
+                    if (errorData.message) errorMsg = errorData.message;
+                    else if (errorData.error) errorMsg = errorData.error;
+                    else errorMsg = JSON.stringify(errorData);
+                } catch (e) {
+                    const text = await res.text();
+                    if (text) errorMsg = text;
+                }
+                throw new Error(errorMsg);
             }
 
             return res.json();

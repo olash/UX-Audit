@@ -55,10 +55,9 @@ async function startAudit() {
 
     } catch (err) {
         console.error(err);
-        let msg = 'Failed to start audit.';
-        if (err.message && err.message.includes('Limit')) msg = err.message; // "Limit Exceeded"
+        // App.api now throws the actual message from backend
+        App.toast('error', err.message || 'Failed to start audit.');
 
-        App.toast('error', msg);
         btn.disabled = false;
         btn.innerHTML = '<span class="iconify" data-icon="lucide:play" data-width="14" data-stroke-width="1.5"></span> Start Audit';
     }
