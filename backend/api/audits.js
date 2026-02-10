@@ -115,6 +115,10 @@ router.post("/", auditLimiter, async (req, res) => {
         const basePageLimit = entitlements.maxPagesPerAudit;
         const availableCredits = profile.credits || 0;
 
+        console.log(`[DEBUG] Plan: ${planName}`);
+        console.log(`[DEBUG] Entitlements:`, JSON.stringify(entitlements));
+        console.log(`[DEBUG] Base Limit: ${basePageLimit}, Credits: ${availableCredits}`);
+
         // If we want to strictly enforce "You cannot audit more than X pages UNLESS you have credits"
         // usage.js actually handles this calculation, let's reuse/enhance it or just do it here.
         // The user asked for: "If requestedPages > entitlements.maxPagesPerAudit -> Error"
@@ -169,14 +173,15 @@ router.post("/", auditLimiter, async (req, res) => {
                 // We need to pass project ID to runScraper if it supports updating existing project.
                 // Inspecting scraper usage in previous file: `runScraper(url, project.id)`
 
-                const result = await runScraper(url, project.id, effectivePageLimit); // Pass effective limit
+                console.log(`[DEBUG] Starting scraper with limit: ${effectivePageLimit || 1}`);
+                const result = await runScraper(url, project.id, effectivePageLimit || 1); // Pass effective limit (safety: 1)
 
                 // Credit Deduction Logic
                 const pagesScanned = result.pagesScanned || 0;
                 // We need to know the User's free page limit again. 
                 // We just used 'effectivePageLimit'. 
                 // If we want to be precise: 'usage.pageLimit' was the Plan Limit.
-                const freePages = usage.pageLimit || 0;
+                const freePages = entitlements.maxPagesPerAudit || 0;
 
                 // Only deduct if they exceeded plan limit
                 const creditsToDeduct = Math.max(0, pagesScanned - freePages);
