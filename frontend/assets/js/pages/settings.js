@@ -241,8 +241,9 @@ async function loadUsageStats() {
     // We wait a tick for DOM just in case, though usually fine here
     setTimeout(async () => {
         try {
-            const usage = await App.getUsage();
-            const audits = await App.audits.getAll();
+            const usage = await App.getUsage(); // User endpoint
+            const res = await App.audits.getAll();
+            const audits = Array.isArray(res) ? res : (res.audits || []);
             const count = audits.length;
             // Plan Limits (aligned with config/pricing.js)
             const planKey = usage.plan || 'free';

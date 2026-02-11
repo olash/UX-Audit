@@ -23,7 +23,8 @@ const PLAN_MAP = {
 const CREDIT_MAP = {
     "1284150": 50,
     "1292508": 200,
-    "1292509": 500
+    "1292509": 500,
+    "1292511": 1000
 };
 
 // 3. Signature Verification Middleware

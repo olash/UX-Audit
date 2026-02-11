@@ -1,31 +1,17 @@
 export const PLANS = {
     free: {
         name: 'Free',
+        price: '0',
         auditLimit: 2,
         pageLimit: 3,
-        price: 0,
-        variantId: null,
-        features: [
-            '2 audits / month',
-            '3 pages per audit',
-            'Buy credits for extra pages',
-            'No PDF exports',
-            'Personal use only'
-        ]
+        features: ['2 Audits / Month', '3 Pages / Audit', 'Standard Insights']
     },
     starter: {
         name: 'Starter',
-        auditLimit: 10,
-        pageLimit: 10,
-        price: 9.99,
-        variantId: '1292487', // Correct ID for Starter
-        features: [
-            '10 audits / month',
-            '10 pages per audit',
-            'Full PDF Reports',
-            'Commercial Use',
-            'Standard Support'
-        ]
+        price: '12',
+        auditLimit: 8,
+        pageLimit: 15,
+        features: ['8 Audits / Month', '15 Pages / Audit', 'PDF Reports', 'Standard Insights']
     },
     pro: {
         name: 'Pro',
@@ -58,7 +44,8 @@ export const PLANS = {
 };
 
 export const CREDIT_PACKS = [
-    { credits: 50, price: 10, variantId: '1284150' },
-    { credits: 200, price: 40, variantId: '1292508' },
-    { credits: 500, price: 90, variantId: '1292509' }
+    { credits: 50, price: 12, pricePerCredit: 0.24, variantId: '1284150' },
+    { credits: 200, price: 40, pricePerCredit: 0.20, variantId: '1292508' },
+    { credits: 500, price: 80, pricePerCredit: 0.16, variantId: '1292509' },
+    { credits: 1000, price: 140, pricePerCredit: 0.14, variantId: '1292511' }
 ];

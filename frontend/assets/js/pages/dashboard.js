@@ -44,21 +44,37 @@ document.addEventListener('DOMContentLoaded', async () => {
             auditTableBody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-sm text-slate-500">Loading audits...</td></tr>';
 
             // Fetch audits from API
-            const data = await App.audits.getAll();
+            // Response format changed: { audits: [...], usage: { used, limit } }
+            // or fallback if old API (array)
+            const response = await App.audits.getAll();
 
-            // Update Stats
+            let data = [];
+            let serverUsage = null;
+
+            if (Array.isArray(response)) {
+                data = response; // Old format
+            } else if (response.audits) {
+                data = response.audits;
+                serverUsage = response.usage;
+            }
+
             // Update Stats
             const stats = App.audits.calculateStats(data);
 
-            // Fetch Profile for Plan Limits
-            let planLimit = 2; // Default Free
-            try {
-                const profile = await App.getProfile();
-                const { PLANS } = await import('../config/pricing.js');
-                const planName = (profile.plan || 'free').toLowerCase();
-                const plan = PLANS[planName] || PLANS.free;
-                planLimit = plan.auditLimit;
-            } catch (e) { console.warn("Could not fetch plan limits", e); }
+            // Use Server Usage if available, otherwise calculate locally
+            const usedCount = serverUsage ? serverUsage.used : stats.thisMonthCount;
+            // Fetch Profile for Plan Limits if not provided by server
+            let planLimit = serverUsage ? serverUsage.limit : 2;
+
+            if (!serverUsage) {
+                try {
+                    const profile = await App.getProfile();
+                    const { PLANS } = await import('../config/pricing.js');
+                    const planName = (profile.plan || 'free').toLowerCase();
+                    const plan = PLANS[planName] || PLANS.free;
+                    planLimit = plan.auditLimit;
+                } catch (e) { console.warn("Could not fetch plan limits", e); }
+            }
 
             const elTotal = document.getElementById('stat-total');
             const elActive = document.getElementById('stat-active');
@@ -68,7 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Show Usage / Limit
                 elTotal.innerHTML = `
                     <div class="flex items-baseline gap-1">
-                        <span>${stats.thisMonthCount}</span>
+                        <span>${usedCount}</span>
                         <span class="text-sm text-slate-400 font-normal">/ ${planLimit} used</span>
                     </div>
                 `;

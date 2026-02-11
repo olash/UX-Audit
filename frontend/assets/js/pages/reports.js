@@ -16,7 +16,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         try {
             list.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-sm text-slate-500">Loading reports...</td></tr>';
-            const audits = await App.audits.getAll({ status: 'completed' });
+            const res = await App.audits.getAll({ status: 'completed' });
+            const audits = Array.isArray(res) ? res : (res.audits || []);
 
             if (audits.length === 0) {
                 list.innerHTML = `

@@ -30,10 +30,31 @@ export const PLANS = {
 };
 
 export const PLAN_ENTITLEMENTS = {
-    free: { maxPagesPerAudit: 3, auditsPerMonth: 2, canGenerateReports: false },
-    starter: { maxPagesPerAudit: 10, auditsPerMonth: 10, canGenerateReports: true },
-    pro: { maxPagesPerAudit: 30, auditsPerMonth: 30, canGenerateReports: true },
-    team: { maxPagesPerAudit: 75, auditsPerMonth: 75, canGenerateReports: true }
+    free: {
+        maxPagesPerAudit: 3,
+        auditsPerMonth: 2,
+        canGenerateReports: false,
+        advancedInsights: false
+    },
+    starter: {
+        maxPagesPerAudit: 15,
+        auditsPerMonth: 8,
+        canGenerateReports: true,
+        advancedInsights: false
+    },
+    pro: {
+        maxPagesPerAudit: 40,
+        auditsPerMonth: 30,
+        canGenerateReports: true,
+        advancedInsights: true
+    },
+    team: {
+        maxPagesPerAudit: 75,
+        auditsPerMonth: 75,
+        canGenerateReports: true,
+        advancedInsights: true,
+        whiteLabel: true
+    }
 };
 
 export const CREDIT_PACKS = [

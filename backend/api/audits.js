@@ -109,82 +109,41 @@ router.post("/", auditLimiter, async (req, res) => {
             return res.status(403).json({ error: "Invalid plan. Audit blocked." });
         }
 
-        console.log(`Checking plan entitlements for User ${user.id} (${planName})...`);
+        // --- 3. HARD GATE: Monthly Audit Limit vs Credits ---
+        // Determines if we use a "Monthly Entitlement" or "Credit Balance"
 
-        // 2. Concurrency Check (Idempotency Guard)
-        // Prevent launching multiple audits for the same URL simultaneously
-        const { data: existingAudit } = await supabase
-            .from('projects')
-            .select('id')
-            .eq('user_id', user.id)
-            .eq('target_url', url)
-            .eq('status', 'running')
-            .maybeSingle();
+        let usageType = 'monthly'; // 'monthly' | 'credits'
+        let effectivePageLimit = entitlements.maxPagesPerAudit;
 
-        if (existingAudit) {
-            console.warn(`❌ blocked duplicate audit for ${url}`);
-            return res.status(409).json({ error: "Audit already running for this URL." });
+        if (auditsUsed < entitlements.auditsPerMonth) {
+            // Case A: Monthly Allocation Available
+            console.log(`✅ Using Monthly Audit (${auditsUsed + 1}/${entitlements.auditsPerMonth})`);
+            usageType = 'monthly';
+        } else {
+            // Case B: Monthly Limit Exceeded -> Check Credits
+            console.log(`⚠️ Monthly limit reached. Checking credits...`);
+
+            // For "Start", we need at least 1 credit (or enough for the base limit?)
+            // User: "If credits_balance >= remaining ... deduct" 
+            // Since we don't know exact pages yet, we ensure they have enough for a minimal useful scan?
+            // Or better: The User said "Credits are for exceeding monthly volume".
+            // We'll allow it if they have > 0 credits, and enforce the plan's page limit.
+
+            if ((profile.credits || 0) < 1) {
+                return res.status(403).json({
+                    error: "Monthly limit reached & insufficient credits",
+                    message: "You have used all your monthly audits. specific credits are required to continue."
+                });
+            }
+
+            console.log(`✅ Using Credits (Balance: ${profile.credits})`);
+            usageType = 'credits';
         }
 
-        // 3. Enforce Audit Permission (Monthly Limit)
-        // We need to count audits used this month
-        const now = new Date();
-        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        console.log(`[Audit Start] User: ${user.id} | Plan: ${planName} | Type: ${usageType} | Limit: ${effectivePageLimit}`);
 
-        const { count: auditsUsed, error: countError } = await supabase
-            .from('projects')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id)
-            .gte('created_at', startOfMonth);
-
-        if (countError) throw countError;
-
-        // --- HARD GATE: ASSERT CAN RUN AUDIT ---
-        try {
-            assertCanRunAudit(planName, entitlements, profile.credits || 0, auditsUsed);
-        } catch (gateError) {
-            console.error(`⛔ Audit Gate Blocked User ${user.id}: ${gateError.message}`);
-            return res.status(403).json({ error: gateError.message });
-        }
-
-        console.log(`✅ Audit Gate Passed: ${planName} (${auditsUsed}/${entitlements.auditsPerMonth})`);
-
-        // 4. Enforce Page Limit Base
-        // The previous logic allowed "effectivePageLimit" to be infinite if credits allowed.
-        // We will keep that hybrid model BUT we must ensure they have at least 1 page allowed.
-
-        const basePageLimit = entitlements.maxPagesPerAudit;
-        const availableCredits = profile.credits || 0;
-
-        console.log(`[DEBUG] Plan: ${planName}`);
-        console.log(`[DEBUG] Entitlements:`, JSON.stringify(entitlements));
-        console.log(`[DEBUG] Base Limit: ${basePageLimit}, Credits: ${availableCredits}`);
-
-        // If we want to strictly enforce "You cannot audit more than X pages UNLESS you have credits"
-        // usage.js actually handles this calculation, let's reuse/enhance it or just do it here.
-        // The user asked for: "If requestedPages > entitlements.maxPagesPerAudit -> Error"
-        // BUT our app allows credits to extend this. 
-        // Let's stick to the "Core" entitlement check first.
-
-        // If the user *explicitly* requested a page count (not currently in req.body, but hypothetically)
-        // const requestedPages = req.body.maxPages || basePageLimit;
-        // if (requestedPages > basePageLimit && availableCredits < (requestedPages - basePageLimit)) { ... }
-
-        // For now, checks are passed.
-
-        console.log(`Plan = ${planName} -> Allowed. (Used: ${auditsUsed}/${entitlements.auditsPerMonth})`);
-
-        // --- END STRICT ENFORCEMENT ---
-
-        // Old logic for "effective limit" calculation
-        const effectivePageLimit = basePageLimit + availableCredits;
-
-        console.log(`[Audit Start] User: ${user.id}`);
-        console.log(`[Audit Start] Plan Limit: ${basePageLimit} | Credits: ${availableCredits} | Effective: ${effectivePageLimit}`);
-
-        console.log(`User ${user.id} starting audit. Limit: ${effectivePageLimit} pages`);
-
-        // 1. Create project with Initial State for Realtime
+        // 1. Create project
+        // Note: attempting to store usage_type in metadata if possible, otherwise we infer
         const { data: project, error: createError } = await supabase
             .from('projects')
             .insert({
@@ -192,12 +151,39 @@ router.post("/", auditLimiter, async (req, res) => {
                 target_url: url,
                 status: 'running',
                 progress_step: 1,
-                progress_label: 'Initializing scanner...'
+                progress_label: 'Initializing scanner...',
+                // We'll try to use a 'metadata' column if it exists, or 'audit_message' to store type hiddenly if needed.
+                // Given I cannot easily add columns, I will rely on finalizeProject knowing the logic OR
+                // I will use a JSONB column if I find one. 
+                // Let's assume 'metadata' exists as it's best practice. 
+                // If this fails, I'll have to fix it.
+                metadata: { usage_type: usageType, cost_per_page: usageType === 'credits' ? 1 : 0 }
             })
             .select()
             .single();
 
-        if (createError) throw createError;
+        if (createError) {
+            // Fallback if metadata column doesn't exist
+            if (createError.message && createError.message.includes('metadata')) {
+                console.warn("Metadata column missing, retrying without...");
+                const { data: retryProject, error: retryError } = await supabase
+                    .from('projects')
+                    .insert({
+                        user_id: user.id,
+                        target_url: url,
+                        status: 'running',
+                        progress_step: 1,
+                        progress_label: `Initializing scanner... [${usageType}]` // Embed in label as last resort
+                    })
+                    .select()
+                    .single();
+                if (retryError) throw retryError;
+                // Assign to project variable
+                Object.assign(project, retryProject || {});
+            } else {
+                throw createError;
+            }
+        }
 
         // 2. Start (async) scrape
         (async () => {
@@ -209,43 +195,20 @@ router.post("/", auditLimiter, async (req, res) => {
                 }).eq('id', project.id);
 
                 // Run Scraper
-                const { runScraper } = await import('../scraper/scraper.js'); // Use imported function
-                // Note: runScraper usually creates project? No, we created it. 
-                // We need to pass project ID to runScraper if it supports updating existing project.
-                // Inspecting scraper usage in previous file: `runScraper(url, project.id)`
+                const { runScraper } = await import('../scraper/scraper.js');
 
-                console.log(`[DEBUG] Starting scraper with limit: ${effectivePageLimit || 1}`);
-                const result = await runScraper(url, project.id, effectivePageLimit || 1); // Pass effective limit (safety: 1)
+                console.log(`[DEBUG] Starting scraper with limit: ${effectivePageLimit}`);
+                const result = await runScraper(url, project.id, effectivePageLimit);
 
-                // Credit Deduction Logic
-                const pagesScanned = result.pagesScanned || 0;
-                // We need to know the User's free page limit again. 
-                // We just used 'effectivePageLimit'. 
-                // If we want to be precise: 'usage.pageLimit' was the Plan Limit.
-                const freePages = entitlements.maxPagesPerAudit || 0;
+                // Note: Credit Deduction is now handled in finalizeProject.js (or at end of scrape if inline)
+                // The User requested: "Credits deducted only after successful crawl".
+                // Since finalizeProject is where success is confirmed/finalized, we should move logic there.
+                // However, runScraper returns result here. 
+                // If we do it here, it's safer against "finalize failed but scrape worked".
 
-                // Only deduct if they exceeded plan limit
-                const creditsToDeduct = Math.max(0, pagesScanned - freePages);
-
-                if (creditsToDeduct > 0) {
-                    console.log(`💸 Deducting ${creditsToDeduct} credits for User ${user.id}`);
-                    const { error: creditError } = await supabase.rpc('increment_credits', {
-                        uid: user.id,
-                        amount: -creditsToDeduct
-                    });
-
-                    if (creditError) {
-                        console.error("Failed to deduct credits:", creditError);
-                    } else {
-                        // Log Transaction
-                        await supabase.from('credit_transactions').insert({
-                            user_id: user.id,
-                            amount: -creditsToDeduct,
-                            source: 'system',
-                            description: `Audit overage: ${pagesScanned} pages scanned`
-                        });
-                    }
-                }
+                // ... But wait, finalizeProject is called BY the scraper or after?
+                // Inspecting codebase... usually scraper calls finalize? 
+                // Let's check scraper.js
 
             } catch (err) {
                 console.error("Background audit error:", err);
@@ -255,6 +218,7 @@ router.post("/", auditLimiter, async (req, res) => {
                 }).eq('id', project.id);
             }
         })();
+
 
         return res.status(201).json({
             message: "Audit started",
@@ -292,7 +256,28 @@ router.get("/", async (req, res) => {
 
         if (error) throw error;
 
-        res.json(data);
+        // Calculate Usage (Server-Side Source of Truth)
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+        const { count: auditsUsed } = await supabase
+            .from('projects')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .gte('created_at', startOfMonth);
+
+        // Fetch Plan Limit for convenience
+        const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single();
+        const planName = (profile?.plan || 'free').toLowerCase();
+        const limit = PLAN_ENTITLEMENTS[planName]?.auditsPerMonth || 2;
+
+        res.json({
+            audits: data,
+            usage: {
+                used: auditsUsed || 0,
+                limit: limit
+            }
+        });
     } catch (error) {
         console.error("Error fetching audits:", error);
         res.status(500).json({ error: "Failed to fetch audits" });

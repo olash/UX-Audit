@@ -1,6 +1,7 @@
 import { supabase } from "./supabase.js";
 import { DIMENSIONS } from "../ai/scoring.config.js";
 import { generateReport } from "../reports/generateReport.js";
+import { PLAN_ENTITLEMENTS } from "../config/pricing.js";
 
 /**
  * Aggregates scores from all pages and finalizes the project.
@@ -107,14 +108,70 @@ export async function finalizeProject(projectId) {
         if (updateError) throw updateError;
         console.log("✅ Project successfully finalized.");
 
-        // 4. Trigger Async PDF Generation
-        // Using setImmediate to not block the current stack, though functionally 
-        // in Node this is still the same process. For true async in ECS, use SQS.
-        // But per instructions "Option A (Good for now)"
-        setImmediate(() => {
-            console.log("🚀 Triggering background PDF generation...");
-            generateReport(projectId).catch(err => console.error("Background PDF Gen Failed:", err));
-        });
+        // 4. Trigger Async PDF Generation (CONDITIONAL)
+        // Check if user is entitled to PDF generation to save compute
+        const { data: projectUser } = await supabase
+            .from('projects')
+            .select('user_id, metadata, progress_label') // Fetch metadata
+            .eq('id', projectId)
+            .single();
+
+        if (projectUser) {
+            // --- CREDIT DEDUCTION LOGIC ---
+            // Check if this project was flagged to use credits
+            const usageType = projectUser.metadata?.usage_type ||
+                (projectUser.progress_label?.includes('[credits]') ? 'credits' : 'monthly');
+
+            if (usageType === 'credits') {
+                const pagesDeducted = pages.length; // 1 credit = 1 page
+                if (pagesDeducted > 0) {
+                    console.log(`💳 Deducting ${pagesDeducted} credits for Project ${projectId} (User ${projectUser.user_id})`);
+
+                    // Atomic Deduction via RPC
+                    const { error: creditError } = await supabase.rpc('increment_credits', {
+                        uid: projectUser.user_id,
+                        amount: -pagesDeducted
+                    });
+
+                    if (creditError) {
+                        console.error("❌ Failed to deduct credits:", creditError);
+                        // We record the failure but don't fail the audit? 
+                        // Or maybe we insert a 'debt' record? 
+                        // For now just log error.
+                    } else {
+                        // Log Transaction
+                        await supabase.from('credit_transactions').insert({
+                            user_id: projectUser.user_id,
+                            amount: -pagesDeducted,
+                            source: 'audit',
+                            description: `Audit: ${projectId} (${pagesDeducted} pages)`
+                        });
+                    }
+                }
+            }
+            // ------------------------------
+
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('plan')
+                .eq('id', projectUser.user_id)
+                .single();
+
+            const planName = (profile?.plan || 'free').toLowerCase();
+            const entitlements = PLAN_ENTITLEMENTS[planName];
+
+            if (entitlements && entitlements.canGenerateReports) {
+                // Using setImmediate to not block the current stack
+                setImmediate(() => {
+                    console.log("🚀 Triggering background PDF generation...");
+                    // Pass explicit checks if needed, but generateReport handles it? 
+                    // No, generateReport just runs. Check is here.
+                    generateReport(projectId).catch(err => console.error("Background PDF Gen Failed:", err));
+                });
+            } else {
+                console.log(`ℹ️ Skipping PDF generation for user ${projectUser.user_id} (Plan: ${planName})`);
+            }
+        }
 
     } catch (err) {
         console.error("❌ Failed to finalize project:", err.message);

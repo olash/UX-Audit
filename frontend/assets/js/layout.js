@@ -145,7 +145,8 @@ const Layout = {
         try {
             const notifMenu = document.getElementById('notifMenu');
             // Simplified: Fetch recent completed audits
-            const audits = await App.audits.getAll({ status: 'completed' });
+            const res = await App.audits.getAll({ status: 'completed' });
+            const audits = Array.isArray(res) ? res : (res.audits || []);
 
             // Filter primarily for recent ones, or just show last 5 completed
             const recent = audits.slice(0, 5);

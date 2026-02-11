@@ -183,7 +183,14 @@ const App = {
         },
 
         // Client-side stats calculation to centralize logic
-        calculateStats(audits) {
+        calculateStats(auditsOrResponse) {
+            let audits = [];
+            if (Array.isArray(auditsOrResponse)) {
+                audits = auditsOrResponse;
+            } else if (auditsOrResponse.audits) {
+                audits = auditsOrResponse.audits;
+            }
+
             const total = audits.length;
             const completed = audits.filter(a => a.status === 'completed').length;
             const active = total - completed;
