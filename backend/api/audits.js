@@ -109,6 +109,21 @@ router.post("/", auditLimiter, async (req, res) => {
             return res.status(403).json({ error: "Invalid plan. Audit blocked." });
         }
 
+        // --- 2. Count Monthly Audits Used ---
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+        const { count: auditsUsed, error: countError } = await supabase
+            .from('projects')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .gte('created_at', startOfMonth);
+
+        if (countError) {
+            console.error("Failed to count audits:", countError);
+            return res.status(500).json({ error: "Internal check failed" });
+        }
+
         // --- 3. HARD GATE: Monthly Audit Limit vs Credits ---
         // Determines if we use a "Monthly Entitlement" or "Credit Balance"
 
