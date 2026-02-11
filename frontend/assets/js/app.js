@@ -70,7 +70,8 @@ const App = {
             email,
             password,
             options: {
-                data: { first_name: firstName, last_name: lastName }
+                data: { first_name: firstName, last_name: lastName },
+                emailRedirectTo: window.location.origin + '/frontend/pages/Dashboard_Homepage.html'
             }
         });
         if (error) throw error;
