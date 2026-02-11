@@ -59,7 +59,7 @@ async function updateCostPreview() {
             } else {
                 detailsEl.innerHTML = `
                     <span class="font-semibold text-amber-600">⚡ Uses Credits</span><br>
-                    <span class="text-xs text-slate-500">Monthly limit reached. This audit will cost <strong>up to ${maxPages} credits</strong> (1 credit/page).<br>Balance: ${balance} credits.</span>
+                    <span class="text-xs text-slate-500">Monthly limit reached. This audit will use credits.<br><strong>Limit: Up to ${balance} Pages</strong> (1 credit/page).<br>Balance: ${balance} credits.</span>
                 `;
             }
         }

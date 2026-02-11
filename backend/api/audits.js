@@ -151,7 +151,9 @@ router.post("/", auditLimiter, async (req, res) => {
                 });
             }
 
-            console.log(`✅ Using Credits (Balance: ${profile.credits})`);
+            // User Request: "Limit is until all credits are exhausted"
+            effectivePageLimit = profile.credits;
+            console.log(`✅ Using Credits (Balance: ${profile.credits} -> Limit: ${effectivePageLimit} pages)`);
             usageType = 'credits';
         }
 
