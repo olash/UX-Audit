@@ -12,7 +12,13 @@ export function ensureScreenshotDir() {
 
 export function normalizeUrl(url) {
     try {
-        return new URL(url).href.split("#")[0];
+        const u = new URL(url);
+        u.hash = ''; // Remove hash
+        let normalized = u.href;
+        if (normalized.endsWith('/') && normalized.length > 1) {
+            normalized = normalized.slice(0, -1);
+        }
+        return normalized;
     } catch {
         return null;
     }

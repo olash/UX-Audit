@@ -15,7 +15,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!list) return;
 
         try {
-            list.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-sm text-slate-500">Loading reports...</td></tr>';
+            // Skeleton Loading
+            const skeletonRow = `
+                <tr class="animate-pulse">
+                    <td class="px-4 py-3"><div class="h-4 bg-slate-200 rounded w-4"></div></td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-slate-200 rounded"></div>
+                            <div class="space-y-2">
+                                <div class="h-3 bg-slate-200 rounded w-24"></div>
+                                <div class="h-2 bg-slate-200 rounded w-32"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3"><div class="h-3 bg-slate-200 rounded w-20"></div></td>
+                    <td class="px-4 py-3"><div class="h-8 w-8 bg-slate-200 rounded-full"></div></td>
+                    <td class="px-4 py-3"><div class="h-5 bg-slate-200 rounded-full w-20"></div></td>
+                    <td class="px-4 py-3 text-right"><div class="h-4 bg-slate-200 rounded w-4 ml-auto"></div></td>
+                </tr>
+            `;
+            list.innerHTML = skeletonRow.repeat(5);
             const res = await App.audits.getAll({ status: 'completed' });
             const audits = Array.isArray(res) ? res : (res.audits || []);
 

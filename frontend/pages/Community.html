@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased bg-slate-50">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Community - UX Audit</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Iconify -->
+    <script src="//code.iconify.design/1/1.0.6/iconify.min.js"></script>
+
+    <!-- Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        slate: {
+                            850: '#1f2937',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="text-slate-900 bg-slate-50 min-h-screen flex flex-col">
+
+    <div id="app" class="flex-1 flex flex-col">
+        <!-- Layout injected here -->
+
+        <!-- Fallback Content while layout loads -->
+        <main id="public-content" class="pt-16 flex-1 flex flex-col items-center justify-center p-6">
+            <div class="max-w-2xl w-full text-center space-y-8">
+                <div
+                    class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-[#5865F2]/10 text-[#5865F2] mb-4">
+                    <span class="iconify" data-icon="simple-icons:discord" data-width="48"></span>
+                </div>
+
+                <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-slate-900">
+                    Join the Community
+                </h1>
+
+                <p class="text-lg text-slate-600 max-w-xl mx-auto leading-relaxed">
+                    Connect with other UX professionals, share your audit results, get feedback, and shape the future of
+                    the platform.
+                </p>
+
+                <div class="pt-4">
+                    <a href="https://discord.gg/fK8wn6tdkR" target="_blank" rel="noopener noreferrer"
+                        class="inline-flex items-center gap-3 bg-[#5865F2] hover:bg-[#4752C4] text-white text-lg font-medium px-8 py-4 rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1">
+                        <span class="iconify" data-icon="simple-icons:discord" data-width="24"></span>
+                        Join Discord Server
+                    </a>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-12 text-left">
+                    <div class="p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+                            <span class="iconify" data-icon="lucide:message-circle" data-width="20"></span>
+                        </div>
+                        <h3 class="font-semibold text-slate-900 mb-1">Peer Support</h3>
+                        <p class="text-sm text-slate-500">Get stuck? Ask questions and get help from the community.</p>
+                    </div>
+                    <div class="p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-4">
+                            <span class="iconify" data-icon="lucide:lightbulb" data-width="20"></span>
+                        </div>
+                        <h3 class="font-semibold text-slate-900 mb-1">Feature Requests</h3>
+                        <p class="text-sm text-slate-500">Vote on new features and suggest improvements directly to
+                            devs.</p>
+                    </div>
+                    <div class="p-6 bg-white rounded-xl border border-slate-100 shadow-sm">
+                        <div
+                            class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-4">
+                            <span class="iconify" data-icon="lucide:share-2" data-width="20"></span>
+                        </div>
+                        <h3 class="font-semibold text-slate-900 mb-1">Showcase</h3>
+                        <p class="text-sm text-slate-500">Share your improved UX scores and celebrate wins.</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { App } from '../assets/js/app.js';
+        import { Layout } from '../assets/js/layout.js';
+
+        // Check auth to decide layout
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize App first
+            await App.init();
+
+            // Decide which layout to load
+            if (App.session) {
+                await Layout.load();
+                // Inject content into #dashboard-content
+                // Actually, this file IS the content if we just want a simple page.
+                // But the Layout.load() REPLACES #app content with dashboard layout.
+                // So we need to inject THIS content into the layout.
+                // BUT, for simplicity, Community page might be better as a Public page always?
+                // Or we can just have a simple check.
+
+                // Strategy: Standard Layout.load() replaces #app. 
+                // We need to inject the "Main Content" part.
+                // Since we don't have a partial for this specific page, we should probably 
+                // just let it be a public page for now, or use a partial if we want it inside dashboard.
+
+                // Let's make it a PUBLIC page for everyone (Logged in or not).
+                // So we use loadPublic().
+                await Layout.loadPublic();
+
+                // Re-inject our content into #public-content
+                // (Because loadPublic overwrites #app, but keeps the #public-content container empty)
+                // Wait, loadPublic loads 'components/public-layout.html' into #app.
+                // public-layout.html has <main id="public-content">.
+                // We need to put our content THERE.
+
+                const content = `
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col items-center text-center">
+                        <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-[#5865F2]/10 text-[#5865F2] mb-6">
+                            <span class="iconify" data-icon="simple-icons:discord" data-width="48"></span>
+                        </div>
+                        <h1 class="text-4xl font-bold tracking-tight text-slate-900 mb-4">Join the Community</h1>
+                        <p class="text-lg text-slate-600 max-w-2xl mb-8">
+                            Connect with other UX professionals, share your audit results, get feedback, and shape the future of the platform.
+                        </p>
+                        <a href="https://discord.gg/fK8wn6tdkR" target="_blank" class="inline-flex items-center gap-3 bg-[#5865F2] hover:bg-[#4752C4] text-white text-lg font-medium px-8 py-4 rounded-xl shadow-lg transition-all transform hover:-translate-y-1 mb-16">
+                            <span class="iconify" data-icon="simple-icons:discord" data-width="24"></span>
+                            Join Discord Server
+                        </a>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-4xl text-left">
+                             <div class="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+                                <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+                                    <span class="iconify" data-icon="lucide:message-circle" data-width="20"></span>
+                                </div>
+                                <h3 class="font-semibold text-slate-900 mb-1">Peer Support</h3>
+                                <p class="text-sm text-slate-500">Get stuck? Ask questions and get help from the community.</p>
+                            </div>
+                            <div class="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+                                <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-4">
+                                    <span class="iconify" data-icon="lucide:lightbulb" data-width="20"></span>
+                                </div>
+                                <h3 class="font-semibold text-slate-900 mb-1">Feature Requests</h3>
+                                <p class="text-sm text-slate-500">Vote on new features and suggest improvements directly to devs.</p>
+                            </div>
+                            <div class="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+                                <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-4">
+                                    <span class="iconify" data-icon="lucide:share-2" data-width="20"></span>
+                                </div>
+                                <h3 class="font-semibold text-slate-900 mb-1">Showcase</h3>
+                                <p class="text-sm text-slate-500">Share your improved UX scores and celebrate wins.</p>
+                            </div>
+                        </div>
+                    </div>
+                 `;
+
+                document.getElementById('public-content').innerHTML = content;
+
+                // Update active state
+                const links = document.querySelectorAll('nav a');
+                links.forEach(l => {
+                    if (l.href.includes('Community')) l.classList.add('text-slate-900');
+                });
+
+            } else {
+                // Not logged in -> Load Public Layout
+                await Layout.loadPublic();
+                const content = `
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col items-center text-center">
+                        <div class="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-[#5865F2]/10 text-[#5865F2] mb-6">
+                            <span class="iconify" data-icon="simple-icons:discord" data-width="48"></span>
+                        </div>
+                        <h1 class="text-4xl font-bold tracking-tight text-slate-900 mb-4">Join the Community</h1>
+                        <p class="text-lg text-slate-600 max-w-2xl mb-8">
+                            Connect with other UX professionals, share your audit results, get feedback, and shape the future of the platform.
+                        </p>
+                        <a href="https://discord.gg/fK8wn6tdkR" target="_blank" class="inline-flex items-center gap-3 bg-[#5865F2] hover:bg-[#4752C4] text-white text-lg font-medium px-8 py-4 rounded-xl shadow-lg transition-all transform hover:-translate-y-1 mb-16">
+                            <span class="iconify" data-icon="simple-icons:discord" data-width="24"></span>
+                            Join Discord Server
+                        </a>
+                         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-4xl text-left">
+                             <div class="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+                                <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+                                    <span class="iconify" data-icon="lucide:message-circle" data-width="20"></span>
+                                </div>
+                                <h3 class="font-semibold text-slate-900 mb-1">Peer Support</h3>
+                                <p class="text-sm text-slate-500">Get stuck? Ask questions and get help from the community.</p>
+                            </div>
+                            <div class="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+                                <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-4">
+                                    <span class="iconify" data-icon="lucide:lightbulb" data-width="20"></span>
+                                </div>
+                                <h3 class="font-semibold text-slate-900 mb-1">Feature Requests</h3>
+                                <p class="text-sm text-slate-500">Vote on new features and suggest improvements directly to devs.</p>
+                            </div>
+                            <div class="p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+                                <div class="w-10 h-10 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-4">
+                                    <span class="iconify" data-icon="lucide:share-2" data-width="20"></span>
+                                </div>
+                                <h3 class="font-semibold text-slate-900 mb-1">Showcase</h3>
+                                <p class="text-sm text-slate-500">Share your improved UX scores and celebrate wins.</p>
+                            </div>
+                        </div>
+                    </div>
+                 `;
+                document.getElementById('public-content').innerHTML = content;
+            }
+        });
+    </script>
+</body>
+
+</html>

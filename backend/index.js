@@ -23,13 +23,17 @@ app.use("/api/webhooks", webhooksRouter);
 app.use(cors());
 app.use(express.json());
 
+// Security Layer 0: Helmet (Headers)
+import helmet from "helmet";
+app.use(helmet());
+
 // Security Layer 1: Global Rate Limiting
 import rateLimit from 'express-rate-limit';
 const globalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // Limit each IP to 100 requests per windowMs
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    max: 300, // Increased limit for scraping bursts (User Request: "World Class")
+    standardHeaders: true,
+    legacyHeaders: false,
     message: { error: "Too many requests, please try again later." }
 });
 app.use(globalLimiter);

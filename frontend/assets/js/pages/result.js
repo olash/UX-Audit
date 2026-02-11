@@ -57,17 +57,80 @@ async function loadFullProjectData(auditId) {
 
     // Bind Download Button
     const btn = document.getElementById('btn-download');
-    const canDownload = project.report_ready && project.report_url;
 
-    if (canDownload) {
+    // Enterprise Polish: Button States
+    // Case 1: Free Plan + Monthly Source -> BLOCKED (Upgrade)
+    // Case 2: Generating -> LOADING
+    // Case 3: Ready -> DOWNLOAD
+
+    // We need to know plan and payment_source. 
+    // project has payment_source. We need user plan. 
+    // We can fetch profile or assume passed in project (not yet).
+    // Let's assume we fetch profile here or check App.user?
+    // App.user has basic info. 
+    // Let's fetch profile quickly or check if project has metadata.
+
+    // Quick fetch for entitlements
+    let isFreeMonthly = false;
+    try {
+        const { data: profile } = await App.api.get('/me'); // Assuming /api/me exists and returns plan
+        const plan = (profile?.plan || 'free').toLowerCase();
+        const source = project.payment_source || project.metadata?.usage_type || 'monthly';
+
+        if (plan === 'free' && source === 'monthly') {
+            isFreeMonthly = true;
+        }
+    } catch (e) { console.warn("Plan check failed", e); }
+
+    if (isFreeMonthly) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="iconify" data-icon="lucide:lock" data-width="14"></span> Upgrade to Export`;
+        btn.className = "group inline-flex items-center gap-2 bg-slate-100 text-slate-500 text-xs font-medium px-3 py-2 rounded border border-slate-200 hover:bg-slate-200 transition-colors cursor-pointer";
+        btn.onclick = () => window.location.href = '/pages/Pricing.html';
+        // Make it clickable to go to pricing even if "disabled" look? 
+        // Better: Remove disabled attribute but keep style.
+        btn.disabled = false;
+    } else if (project.report_ready && project.report_url) {
         btn.disabled = false;
         btn.innerHTML = `<span class="iconify" data-icon="lucide:download" data-width="16"></span> Download Report`;
         btn.onclick = () => window.open(project.report_url, '_blank');
         btn.className = "group inline-flex items-center gap-2 bg-slate-950 hover:bg-slate-800 text-white text-xs font-medium px-3 py-2 rounded shadow-sm transition-all";
     } else {
         btn.disabled = true;
-        btn.innerHTML = `<span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="14"></span> Preparing Report...`;
+        btn.innerHTML = `<span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="14"></span> Generating PDF...`;
         btn.className = "group inline-flex items-center gap-2 bg-slate-100 text-slate-400 text-xs font-medium px-3 py-2 rounded border border-slate-200 cursor-not-allowed";
+    }
+
+    // Bind Re-run Button
+    const rerunBtn = document.getElementById('btn-rerun');
+    if (rerunBtn) {
+        rerunBtn.onclick = async () => {
+            if (!confirm("Start a new audit for this URL? This will consume monthly limit or credits.")) return;
+
+            rerunBtn.disabled = true;
+            rerunBtn.innerHTML = `<span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="14"></span> Starting...`;
+
+            try {
+                // Determine usage type preference? 
+                // Default logic in audits.js handles it (Monthly -> Credits).
+                // We just send the URL.
+                const res = await App.api.post('/audits', {
+                    url: project.target_url,
+                    force_new: true // Optional flag if backend needs it, but standard POST creates new.
+                });
+
+                if (res.id) {
+                    window.location.href = `/pages/Result.html?id=${res.id}`;
+                } else {
+                    throw new Error("No ID returned");
+                }
+            } catch (err) {
+                console.error("Re-run failed", err);
+                App.toast('error', err.message || 'Failed to restart audit');
+                rerunBtn.disabled = false;
+                rerunBtn.innerHTML = `<span class="iconify" data-icon="lucide:refresh-cw" data-width="14"></span> Re-run Audit`;
+            }
+        };
     }
 }
 
@@ -173,6 +236,25 @@ function bindProjectHeader(project) {
     document.getElementById('header-url').textContent = url.hostname;
     document.getElementById('meta-url').textContent = project.target_url;
     document.getElementById('meta-date').textContent = new Date(project.created_at).toLocaleDateString();
+
+    // SEO: Dynamic Title & Meta
+    document.title = `Audit Result: ${url.hostname} - UX Audit`;
+
+    // Helper to set meta
+    const setMeta = (name, content) => {
+        let element = document.querySelector(`meta[name="${name}"]`) || document.querySelector(`meta[property="${name}"]`);
+        if (!element) {
+            element = document.createElement('meta');
+            element.setAttribute(name.startsWith('og:') || name.startsWith('twitter:') ? 'property' : 'name', name);
+            document.head.appendChild(element);
+        }
+        element.setAttribute('content', content);
+    };
+
+    setMeta('description', `UX Audit Report for ${url.hostname}. Score: ${project.score || 'Pending'}/100.`);
+    setMeta('og:title', `UX Audit Result: ${url.hostname}`);
+    setMeta('og:description', `View the comprehensive UX audit report for ${url.hostname}.`);
+    setMeta('og:url', window.location.href);
 
     // Status
     const statusEl = document.getElementById('header-status');

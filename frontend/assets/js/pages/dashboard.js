@@ -41,7 +41,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             const auditTableBody = document.getElementById('audit-list');
             if (!auditTableBody) return;
 
-            auditTableBody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-sm text-slate-500">Loading audits...</td></tr>';
+            // Skeleton Loading
+            const skeletonRow = `
+                <tr class="animate-pulse border-b border-slate-50 last:border-0">
+                    <td class="py-3 px-6">
+                        <div class="flex items-center gap-2">
+                             <div class="w-6 h-6 bg-slate-200 rounded"></div>
+                             <div class="space-y-1.5">
+                                 <div class="h-3 bg-slate-200 rounded w-32"></div>
+                                 <div class="h-2 bg-slate-200 rounded w-20"></div>
+                             </div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-6"><div class="h-5 bg-slate-200 rounded-full w-16"></div></td>
+                    <td class="py-3 px-6"><div class="h-3 bg-slate-200 rounded w-8"></div></td>
+                    <td class="py-3 px-6"><div class="h-4 bg-slate-200 rounded w-8"></div></td>
+                    <td class="py-3 px-6 text-right"><div class="h-4 bg-slate-200 rounded w-4 ml-auto"></div></td>
+                </tr>
+            `;
+            auditTableBody.innerHTML = skeletonRow.repeat(5);
 
             // Fetch audits from API
             // Response format changed: { audits: [...], usage: { used, limit } }

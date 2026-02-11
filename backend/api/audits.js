@@ -174,7 +174,8 @@ router.post("/", auditLimiter, async (req, res) => {
                 // I will use a JSONB column if I find one. 
                 // Let's assume 'metadata' exists as it's best practice. 
                 // If this fails, I'll have to fix it.
-                metadata: { usage_type: usageType, cost_per_page: usageType === 'credits' ? 1 : 0 }
+                metadata: { usage_type: usageType, cost_per_page: usageType === 'credits' ? 1 : 0 },
+                payment_source: usageType // Enterprise Polish: Store explicitly
             })
             .select()
             .single();
@@ -190,7 +191,8 @@ router.post("/", auditLimiter, async (req, res) => {
                         target_url: url,
                         status: 'running',
                         progress_step: 1,
-                        progress_label: `Initializing scanner... [${usageType}]` // Embed in label as last resort
+                        progress_label: `Initializing scanner... [${usageType}]`, // Embed in label as last resort
+                        payment_source: usageType
                     })
                     .select()
                     .single();

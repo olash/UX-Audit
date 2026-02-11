@@ -112,14 +112,16 @@ export async function finalizeProject(projectId) {
         // Check if user is entitled to PDF generation to save compute
         const { data: projectUser } = await supabase
             .from('projects')
-            .select('user_id, metadata, progress_label') // Fetch metadata
+            .select('user_id, metadata, progress_label, target_url, payment_source') // Fetch metadata & needed fields
             .eq('id', projectId)
             .single();
 
         if (projectUser) {
             // --- CREDIT DEDUCTION LOGIC ---
             // Check if this project was flagged to use credits
-            const usageType = projectUser.metadata?.usage_type ||
+            // Enterprise Polish: Check payment_source column first
+            const usageType = projectUser.payment_source ||
+                projectUser.metadata?.usage_type ||
                 (projectUser.progress_label?.includes('[credits]') ? 'credits' : 'monthly');
 
             if (usageType === 'credits') {
@@ -135,9 +137,6 @@ export async function finalizeProject(projectId) {
 
                     if (creditError) {
                         console.error("❌ Failed to deduct credits:", creditError);
-                        // We record the failure but don't fail the audit? 
-                        // Or maybe we insert a 'debt' record? 
-                        // For now just log error.
                     } else {
                         // Log Transaction
                         await supabase.from('credit_transactions').insert({
@@ -149,6 +148,21 @@ export async function finalizeProject(projectId) {
                     }
                 }
             }
+            // ------------------------------
+
+            // --- ENTERPRISE NOTIFICATION ---
+            await supabase.from('notifications').insert({
+                user_id: projectUser.user_id,
+                type: 'audit_completed',
+                title: 'Audit Completed',
+                meta: {
+                    website: projectUser.target_url, // Assuming we fetched it? Wait, we need to fetch target_url or pass it.
+                    // projectUser only has user_id, metadata... we need more fields.
+                    // We can assume we have it or fetch it.
+                    score: finalOverall,
+                    completed_at: new Date().toISOString()
+                }
+            });
             // ------------------------------
 
             const { data: profile } = await supabase
