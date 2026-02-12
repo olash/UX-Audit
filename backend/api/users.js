@@ -1,6 +1,6 @@
 import express from "express";
 import { supabase } from "../db/supabase.js";
-import { checkUsage } from "../utils/usage.js";
+import { checkUsage, getUsageStats } from "../utils/usage.js";
 
 const router = express.Router();
 
@@ -22,18 +22,15 @@ router.get("/me", async (req, res) => {
         const user = await getUserFromRequest(req);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-        // Fetch Profile for additional fields
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('plan, credits')
-            .eq('id', user.id)
-            .single();
+        // Fetch usage stats which covers plan, credits, and limits
+        const stats = await getUsageStats(user.id);
 
         res.json({
             id: user.id,
             email: user.email,
-            plan: profile?.plan || 'free',
-            credits: profile?.credits || 0,
+            plan: stats.plan,
+            credits: stats.credits,
+            usage: stats.audits, // { used, limit }
             user_metadata: user.user_metadata,
             created_at: user.created_at
         });

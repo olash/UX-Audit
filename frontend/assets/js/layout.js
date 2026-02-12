@@ -244,11 +244,11 @@ const Layout = {
             }
         }
 
-        // Trigger Sidebar Update
-        this.updateSidebarPlan();
+        // Trigger Sidebar & Topbar Update
+        this.updateUsageStats();
     },
 
-    updateSidebarPlan: async function () {
+    updateUsageStats: async function () {
         try {
             const token = App.session?.access_token;
             if (!token) return;
@@ -260,28 +260,38 @@ const Layout = {
             if (!response.ok) return;
 
             const data = await response.json();
-            // Data structure expected: { id, email, plan: 'free', credits: 0, ... }
-            // Note: /api/me currently returns profile data from `users.js`
-
-            // We need usage stats (audits used). /api/me might not have it.
-            // Let's assume we need to fetch it or /api/me has it.
-            // If not, we'll just show plan name for now.
-            // Ideally /api/me should return { plan, usage: { used: X, limit: Y } }
+            // Data structure: { plan, credits, usage: { used, limit }, ... }
 
             const planName = (data.plan || 'Free').charAt(0).toUpperCase() + (data.plan || 'Free').slice(1) + ' Plan';
             const credits = data.credits || 0;
+            const used = data.usage?.used || 0;
+            const limit = data.usage?.limit || 0;
 
-            const nameEl = document.getElementById('sidebar-plan-name');
-            const usageEl = document.getElementById('sidebar-plan-usage');
+            // Update Sidebar (Legacy/Mobile)
+            const sideName = document.getElementById('sidebar-plan-name');
+            const sideUsage = document.getElementById('sidebar-plan-usage');
+            const sideProgress = document.getElementById('sidebar-plan-progress');
 
-            if (nameEl) nameEl.textContent = planName;
-            if (usageEl) usageEl.textContent = `${credits} Credits available`;
+            if (sideName) sideName.textContent = planName;
+            if (sideUsage) sideUsage.textContent = `${used}/${limit} Audits`;
+            if (sideProgress) {
+                const pct = Math.min(100, Math.round((used / limit) * 100));
+                sideProgress.style.width = `${pct}%`;
+            }
 
-            // Note: To show "Audits used", we'd need to count them. 
-            // For now, showing Credits is more useful for the credit-based system.
+            // Update Top Bar (Desktop)
+            const topPlan = document.getElementById('topbar-plan');
+            const topAudits = document.getElementById('topbar-audits');
+            const topLimit = document.getElementById('topbar-limit');
+            const topCredits = document.getElementById('topbar-credits');
+
+            if (topPlan) topPlan.textContent = planName;
+            if (topAudits) topAudits.textContent = used;
+            if (topLimit) topLimit.textContent = limit;
+            if (topCredits) topCredits.textContent = credits;
 
         } catch (e) {
-            console.error("Failed to update sidebar", e);
+            console.error("Failed to update usage stats", e);
         }
     },
 

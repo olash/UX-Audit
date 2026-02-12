@@ -12,14 +12,14 @@ export const PLANS = {
         auditLimit: 8,
         pageLimit: 15,
         features: ['8 Audits / Month', '15 Pages / Audit', 'PDF Reports', 'Standard Insights'],
-        variantId: '1261057'
+        variantId: '1292487'
     },
     pro: {
         name: 'Pro',
         auditLimit: 30,
         pageLimit: 30,
-        price: 29,
-        variantId: '1301079', // Test ID
+        price: 39,
+        variantId: '1284104',
         features: [
             '30 audits / month',
             '30 pages per audit',
@@ -32,8 +32,8 @@ export const PLANS = {
         name: 'Team',
         auditLimit: 75,
         pageLimit: 75,
-        price: 59,
-        variantId: '1301081', // Test ID
+        price: 79,
+        variantId: '1284106',
         features: [
             '75 audits / month',
             '75 pages per audit',
@@ -45,8 +45,8 @@ export const PLANS = {
 };
 
 export const CREDIT_PACKS = [
-    { credits: 50, price: 10, pricePerCredit: 0.20, variantId: '1301083' },
-    { credits: 200, price: 40, pricePerCredit: 0.20, variantId: '1301084' },
-    { credits: 500, price: 80, pricePerCredit: 0.16, variantId: '1301085' },
-    { credits: 1000, price: 140, pricePerCredit: 0.14, variantId: '1301086' }
+    { credits: 50, price: 12, pricePerCredit: 0.24, variantId: '1284150' },
+    { credits: 200, price: 40, pricePerCredit: 0.20, variantId: '1292508' },
+    { credits: 500, price: 80, pricePerCredit: 0.16, variantId: '1292509' },
+    { credits: 1000, price: 140, pricePerCredit: 0.14, variantId: '1292511' }
 ];

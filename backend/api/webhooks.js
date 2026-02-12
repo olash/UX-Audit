@@ -15,16 +15,16 @@ router.use(express.json({
 
 // 2. Constants & Maps
 const PLAN_MAP = {
-    "1261057": "starter",
-    "1301079": "pro",
-    "1301081": "team"
+    "1292487": "starter",
+    "1284104": "pro",
+    "1284106": "team"
 };
 
 const CREDIT_MAP = {
-    "1301083": 50,
-    "1301084": 200,
-    "1301085": 500,
-    "1301086": 1000
+    "1284150": 50,
+    "1292508": 200,
+    "1292509": 500,
+    "1292511": 1000
 };
 
 // 3. Signature Verification Middleware

@@ -1,28 +1,22 @@
 import { supabase } from "../db/supabase.js";
-
 import { PLAN_ENTITLEMENTS } from "../config/pricing.js";
 
-export async function checkUsage(userId) {
-    // 1. Get User Plan
-    let planName = 'free';
-
+export async function getUsageStats(userId) {
+    // 1. Get User Plan & Credits
     const { data: profile } = await supabase
         .from('profiles')
         .select('plan, credits')
         .eq('id', userId)
         .single();
 
-    if (profile && profile.plan) {
-        planName = profile.plan.toLowerCase();
-    }
+    const planName = (profile?.plan || 'free').toLowerCase();
+    const credits = profile?.credits || 0;
 
     const entitlements = PLAN_ENTITLEMENTS[planName] || PLAN_ENTITLEMENTS.free;
     const limits = {
         audits: entitlements.auditsPerMonth,
         pages: entitlements.maxPagesPerAudit
     };
-
-    console.log(`[Usage Check] User: ${userId} | Plan: ${planName} | Credits: ${profile?.credits} | Limits: ${JSON.stringify(limits)}`);
 
     // 2. Count Audits this month
     const now = new Date();
@@ -36,21 +30,42 @@ export async function checkUsage(userId) {
 
     if (error) {
         console.error("Usage check error:", error);
-        // Fail open or closed? Closed for safety.
         throw new Error("Could not verify usage limits");
     }
 
-    if (count >= limits.audits) {
-        return {
-            allowed: false,
-            reason: `Monthly audit limit reached (${count}/${limits.audits}). Upgrade your plan to continue.`
-        };
-    }
-
     return {
-        allowed: true,
-        pageLimit: limits.pages,
         plan: planName,
-        credits: profile?.credits || 0 // Usage logic can now use this
+        credits: credits,
+        audits: {
+            used: count,
+            limit: limits.audits
+        },
+        pages: {
+            limit: limits.pages
+        }
     };
+}
+
+export async function checkUsage(userId) {
+    try {
+        const stats = await getUsageStats(userId);
+
+        console.log(`[Usage Check] User: ${userId} | Plan: ${stats.plan} | Credits: ${stats.credits} | Used: ${stats.audits.used}/${stats.audits.limit}`);
+
+        if (stats.audits.used >= stats.audits.limit) {
+            return {
+                allowed: false,
+                reason: `Monthly audit limit reached (${stats.audits.used}/${stats.audits.limit}). Upgrade your plan or use credits.`
+            };
+        }
+
+        return {
+            allowed: true,
+            pageLimit: stats.pages.limit,
+            plan: stats.plan,
+            credits: stats.credits
+        };
+    } catch (e) {
+        return { allowed: false, reason: "Error checking usage: " + e.message };
+    }
 }

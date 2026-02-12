@@ -11,21 +11,21 @@ export const PLANS = {
         pages: 10,
         audits: 10,
         price: 12,
-        priceId: '1261057'
+        priceId: '1292487'
     },
     pro: {
         name: 'Pro',
         pages: 30,
         audits: 30,
-        price: 29,
-        priceId: '1301079'
+        price: 39,
+        priceId: '1284104'
     },
     team: {
         name: 'Team',
         pages: 75,
         audits: 75,
-        price: 59,
-        priceId: '1301081'
+        price: 79,
+        priceId: '1284106'
     }
 };
 
@@ -58,8 +58,8 @@ export const PLAN_ENTITLEMENTS = {
 };
 
 export const CREDIT_PACKS = [
-    { credits: 50, price: 10, priceId: '1301083' },
-    { credits: 200, price: 40, priceId: '1301084' },
-    { credits: 500, price: 80, priceId: '1301085' },
-    { credits: 1000, price: 140, priceId: '1301086' }
+    { credits: 50, price: 12, priceId: '1284150' },
+    { credits: 200, price: 40, priceId: '1292508' },
+    { credits: 500, price: 80, priceId: '1292509' },
+    { credits: 1000, price: 140, priceId: '1292511' }
 ];

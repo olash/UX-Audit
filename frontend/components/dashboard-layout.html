@@ -102,6 +102,27 @@
 
             <!-- Right Actions -->
             <div class="flex items-center gap-4">
+                <!-- Usage Stats (Top Bar) -->
+                <div class="hidden md:flex items-center gap-4 mr-4 text-xs font-medium text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200"
+                    id="topbar-usage">
+                    <!-- Dynamic Content via JS -->
+                    <div class="flex items-center gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                        <span id="topbar-plan">Free Plan</span>
+                    </div>
+                    <div class="w-px h-3 bg-slate-300"></div>
+                    <div>
+                        <span class="text-slate-900" id="topbar-audits">0</span>/<span id="topbar-limit">2</span> Audits
+                    </div>
+                    <div class="w-px h-3 bg-slate-300"></div>
+                    <div class="flex items-center gap-1">
+                        <span class="iconify text-amber-500" data-icon="lucide:coins" data-width="12"></span>
+                        <span class="text-slate-900" id="topbar-credits">0</span> Credits
+                    </div>
+                </div>
+
+                <div class="h-8 w-px bg-slate-200 mx-1"></div>
+
                 <button id="notifBtn" class="text-slate-400 hover:text-slate-700 transition-colors relative">
                     <span class="iconify" data-icon="lucide:bell" data-width="18"></span>
                     <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
