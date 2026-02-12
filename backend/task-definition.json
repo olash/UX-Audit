@@ -6,11 +6,11 @@
     ],
     "cpu": "256",
     "memory": "512",
-    "executionRoleArn": "arn:aws:iam::ACCOUNT_ID:role/ecsTaskExecutionRole",
+    "executionRoleArn": "arn:aws:iam::275017714859:role/ecsTaskExecutionRole",
     "containerDefinitions": [
         {
             "name": "backend-container",
-            "image": "ACCOUNT_ID.dkr.ecr.REGION.amazonaws.com/ux-audit-backend:latest",
+            "image": "275017714859.dkr.ecr.us-east-1.amazonaws.com/ux-audit-backend:latest",
             "cpu": 256,
             "memory": 512,
             "essential": true,
