@@ -10,22 +10,22 @@ export const PLANS = {
         name: 'Starter',
         pages: 10,
         audits: 10,
-        price: 10,
-        priceId: 'price_starter_id_here'
+        price: 12,
+        priceId: '1261057'
     },
     pro: {
         name: 'Pro',
         pages: 30,
         audits: 30,
         price: 29,
-        priceId: 'price_pro_id_here'
+        priceId: '1301079'
     },
     team: {
         name: 'Team',
         pages: 75,
         audits: 75,
         price: 59,
-        priceId: 'price_team_id_here'
+        priceId: '1301081'
     }
 };
 
@@ -58,7 +58,8 @@ export const PLAN_ENTITLEMENTS = {
 };
 
 export const CREDIT_PACKS = [
-    { credits: 50, price: 10, priceId: 'price_credit_50' },
-    { credits: 200, price: 40, priceId: 'price_credit_200' },
-    { credits: 500, price: 90, priceId: 'price_credit_500' }
+    { credits: 50, price: 10, priceId: '1301083' },
+    { credits: 200, price: 40, priceId: '1301084' },
+    { credits: 500, price: 80, priceId: '1301085' },
+    { credits: 1000, price: 140, priceId: '1301086' }
 ];
