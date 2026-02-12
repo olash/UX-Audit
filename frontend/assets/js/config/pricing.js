@@ -17,12 +17,12 @@ export const PLANS = {
     pro: {
         name: 'Pro',
         auditLimit: 30,
-        pageLimit: 30,
+        pageLimit: 40,
         price: 39,
         variantId: '1284104',
         features: [
             '30 audits / month',
-            '30 pages per audit',
+            '40 pages per audit',
             'Advanced Insights',
             'Priority Support',
             'Commercial Use'
