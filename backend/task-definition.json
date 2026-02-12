@@ -14,6 +14,32 @@
             "cpu": 256,
             "memory": 512,
             "essential": true,
+            "environment": [
+                {
+                    "name": "SUPABASE_URL",
+                    "value": "https://mlmstxyixynfsbolgnxu.supabase.co"
+                },
+                {
+                    "name": "SUPABASE_SERVICE_KEY",
+                    "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1sbXN0eHlpeHluZnNib2xnbnh1Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODIzMjk4NSwiZXhwIjoyMDgzODA4OTg1fQ.vi2gPU4mscqOOedCPKEorCXjSHjpxTVkZo_4Ke06XRg"
+                },
+                {
+                    "name": "GEMINI_API_KEY",
+                    "value": "AIzaSyC6eX5dKmHDT3L-37ppAagrSirfNbKAq3I"
+                },
+                {
+                    "name": "LEMON_API_KEY",
+                    "value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI5NGQ1OWNlZi1kYmI4LTRlYTUtYjE3OC1kMjU0MGZjZDY5MTkiLCJqdGkiOiI5YWYxNDM0MWViNzNhMzRkNTlkM2RhN2Q3ZTZiYjEwYWJjZjNiN2FhMjlmMDc4M2Y1MTcwMGJkOWJiOWJhYTBjZjE5OTJkNGI0MzU4NmY2YiIsImlhdCI6MTc3MDY3MjUyMy43OTM5OTcsIm5iZiI6MTc3MDY3MjUyMy43OTM5OTksImV4cCI6MTc4NjIzMzYwMC4wMzU5NjgsInN1YiI6IjIwMDcwMjEiLCJzY29wZXMiOltdfQ.uZPhDik5paIvZz66JLjJFAYTdekTLhLT2k5TxamW2M1URGv0ot0_06y_GlMiHuZzGK1Cr8VaTBjJNlvfwv5kCKeHb-7Qtz4hgerpG-RBbHbEFVCJjgSfC7iAn51b5wvTur_e3DV84KKdXOdBjD34DXfBVX2G0NXVmqBQxju74qHPojpbpmc6SAQ01WGaifqNFcsymdXxIpLfx-VkPq4UWlWcXzXmSxt_Sfaa4DYaB6GKIZLOCVWxc_M2VdXU8xNwcGwOAqv1oytS3fk9gxW7kgZUBG2St0YofjHyQrl-_qYaRstzAP26Sm26QayxuzM-lDQ8xHYTQKymp60sTKiKPKBTJhvHNIYjxmS8NUHJzmYRzeTkMN-BSYERGkDrQi7WUxalLnNt8OC2FIIYcC4iDioCjgGVBiDdZrUA-Daa-ldZYU1pNQJkjQR8K0WnqWXCVchwNPqoqULs1sZ_e-V5nLS_IKKgTtXohbca6DN-LGdfvuvrLiQTNI_ytKRRIlRKWgVoGLS_8N04r_XOpqTaedIwFqAYKNiS4BlMxoYsbMsw59sUpR5-RvVdLChtqnH0Nej4rcjZa9yJxFdx96pd4TGn0KnpCvapuOwOWUnZcJvFloK5fk8qWip8bwxqq3EJG51np4RZW4znvfsBFWxQpKRxmdfL7dwXGX3Vw61rqoc"
+                },
+                {
+                    "name": "STORE_ID",
+                    "value": "282227"
+                },
+                {
+                    "name": "LEMON_WEBHOOK_SECRET",
+                    "value": "9f662a940458c15992b99ea8cadf5f71"
+                }
+            ],
             "portMappings": [
                 {
                     "containerPort": 4000,
