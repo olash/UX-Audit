@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabase } from '../db/supabase.js';
 import crypto from 'crypto';
+import { posthog } from '../utils/posthog.js';
 
 const router = express.Router();
 
@@ -91,7 +92,18 @@ router.post('/', verifySignature, async (req, res) => {
                 }, { onConflict: 'lemon_subscription_id' }); // Assuming this constraint exists
 
                 if (error) console.error("Subscription Upsert Error:", error);
-                else console.log(`✅ User ${userId} updated to plan ${planName}`);
+                else {
+                    console.log(`✅ User ${userId} updated to plan ${planName}`);
+
+                    posthog.capture({
+                        distinctId: userId,
+                        event: 'subscription_upgraded',
+                        properties: {
+                            plan: planName,
+                            lemon_subscription_id: data.id
+                        }
+                    });
+                }
             } else {
                 console.warn(`⚠️ Unknown plan variant: ${variantId}`);
             }
@@ -147,6 +159,15 @@ router.post('/', verifySignature, async (req, res) => {
                 });
 
                 console.log(`💰 User ${userId} purchased ${credits} credits`);
+
+                posthog.capture({
+                    distinctId: userId,
+                    event: 'credits_purchased',
+                    properties: {
+                        amount: credits,
+                        variant_id: variantId
+                    }
+                });
             }
         }
 

@@ -1,4 +1,5 @@
 import { PLANS } from '../config/pricing.js';
+import posthog from '../lib/posthog.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Initialize App & Auth

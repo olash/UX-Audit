@@ -1,3 +1,6 @@
+// result.js
+import posthog from '../lib/posthog.js';
+
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Init
     await App.init();
@@ -93,7 +96,13 @@ async function loadFullProjectData(auditId) {
     } else if (project.report_ready && project.report_url) {
         btn.disabled = false;
         btn.innerHTML = `<span class="iconify" data-icon="lucide:download" data-width="16"></span> Download Report`;
-        btn.onclick = () => window.open(project.report_url, '_blank');
+        btn.onclick = () => {
+            posthog.capture('download_pdf_clicked', {
+                audit_id: auditId,
+                plan: App.user?.user_metadata?.plan
+            });
+            window.open(project.report_url, '_blank');
+        };
         btn.className = "group inline-flex items-center gap-2 bg-slate-950 hover:bg-slate-800 text-white text-xs font-medium px-3 py-2 rounded shadow-sm transition-all";
     } else {
         btn.disabled = true;
@@ -168,6 +177,14 @@ function initRealtime(projectId) {
                 // Update Progress UI immediately
                 renderProgressBlock(newProject);
                 bindProjectHeader(newProject);
+
+                // Live Usage Update (Step 4)
+                if (newProject.status === 'completed' || newProject.audit_status === 'completed') {
+                    if (window.Layout && window.Layout.updateUsageStats) {
+                        console.log("Updating usage stats after audit completion...");
+                        window.Layout.updateUsageStats();
+                    }
+                }
 
                 // If step changed significantly, refetch everything to update lists
                 // E.g. moving from crawling -> analyzing -> compiling

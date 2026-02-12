@@ -5,6 +5,7 @@ import { supabase } from "../db/supabase.js";
 import { generateReport } from "../reports/generateReport.js";
 import { checkUsage } from "../utils/usage.js";
 import { PLAN_ENTITLEMENTS } from "../config/pricing.js";
+import { posthog } from "../utils/posthog.js";
 
 const router = express.Router();
 
@@ -203,6 +204,18 @@ router.post("/", auditLimiter, async (req, res) => {
                 throw createError;
             }
         }
+
+        // PostHog Tracking
+        posthog.capture({
+            distinctId: user.id,
+            event: 'audit_started',
+            properties: {
+                project_id: project.id,
+                plan: planName,
+                usage_type: usageType,
+                url: url
+            }
+        });
 
         // 2. Start (async) scrape
         (async () => {

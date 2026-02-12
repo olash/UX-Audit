@@ -241,14 +241,20 @@ async function loadUsageStats() {
     // We wait a tick for DOM just in case, though usually fine here
     setTimeout(async () => {
         try {
-            const usage = await App.getUsage(); // User endpoint
-            const res = await App.audits.getAll();
-            const audits = Array.isArray(res) ? res : (res.audits || []);
-            const count = audits.length;
-            // Plan Limits (aligned with config/pricing.js)
-            const planKey = usage.plan || 'free';
-            // Use imported PLANS or fallback
-            // Note: We need to import PLANS at the top of the file
+            // Use /api/me for consistent usage stats (same as Top Bar)
+            const token = App.session?.access_token;
+            if (!token) return;
+
+            const response = await fetch('/api/me', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch user data');
+
+            const data = await response.json();
+            // Data structure: { plan, credits, audits: { used, limit }, pages: { limit } }
+
+            const planKey = (data.plan || 'free').toLowerCase();
             const currentPlan = PLANS[planKey] || PLANS.free;
 
             // Update UI
@@ -261,36 +267,34 @@ async function loadUsageStats() {
 
                 // Dynamic Feature List
                 if (document.getElementById('plan-feature-audits')) {
-                    document.getElementById('plan-feature-audits').textContent = currentPlan.auditLimit;
+                    document.getElementById('plan-feature-audits').textContent = data.audits.limit; // Use backend limit
                 }
             }
 
             // Usage
-            const monthlyLimit = currentPlan.auditLimit;
-            const percentage = Math.min((usage.thisMonthCount / monthlyLimit) * 100, 100);
+            const used = data.audits.used || 0;
+            const limit = data.audits.limit || currentPlan.auditLimit;
+            const percentage = Math.min((used / limit) * 100, 100);
 
             if (document.getElementById('stat-usage-text')) {
-                document.getElementById('stat-usage-text').textContent = usage.thisMonthCount;
-                document.getElementById('stat-usage-limit').textContent = `/ ${monthlyLimit}`;
+                document.getElementById('stat-usage-text').textContent = used;
+                document.getElementById('stat-usage-limit').textContent = `/ ${limit}`;
             }
             if (document.getElementById('stat-usage-bar')) {
                 document.getElementById('stat-usage-bar').style.width = `${percentage}%`;
-                // Color change if near limit?
+                // Color change if near limit
                 if (percentage > 90) document.getElementById('stat-usage-bar').classList.add('bg-red-500');
+                else document.getElementById('stat-usage-bar').classList.remove('bg-red-500');
             }
 
             if (document.getElementById('stat-pages-limit')) {
-                document.getElementById('stat-pages-limit').textContent = currentPlan.pageLimit;
+                // Use backend page limit if available, else plan default
+                document.getElementById('stat-pages-limit').textContent = data.pages?.limit || currentPlan.pageLimit;
             }
 
             // Credits
             if (document.getElementById('credits-balance')) {
-                const credits = usage.credits || 0; // Usage API should return credits
-                // If usage doesn't have credits, we might need profile fetch. 
-                // App.getUsage() usually wraps /usage endpoint. 
-                // If /usage doesn't return credits, let's use profile fallback
-                const profile = await App.getProfile();
-                document.getElementById('credits-balance').textContent = profile.credits || 0;
+                document.getElementById('credits-balance').textContent = data.credits || 0;
             }
 
             // Button Toggle
@@ -302,7 +306,10 @@ async function loadUsageStats() {
                 if (billingBtn) billingBtn.style.display = 'none';
             } else {
                 // Paid plan
-                if (upgradeBtn) upgradeBtn.textContent = 'Change Plan';
+                if (upgradeBtn) {
+                    upgradeBtn.textContent = 'Change Plan';
+                    upgradeBtn.style.display = 'inline-flex';
+                }
                 if (billingBtn) billingBtn.style.display = 'inline-flex';
             }
 

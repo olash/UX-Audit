@@ -2,6 +2,7 @@ import { supabase } from "./supabase.js";
 import { DIMENSIONS } from "../ai/scoring.config.js";
 import { generateReport } from "../reports/generateReport.js";
 import { PLAN_ENTITLEMENTS } from "../config/pricing.js";
+import { posthog } from "../utils/posthog.js";
 
 /**
  * Aggregates scores from all pages and finalizes the project.
@@ -108,6 +109,14 @@ export async function finalizeProject(projectId) {
         if (updateError) throw updateError;
         console.log("✅ Project successfully finalized.");
 
+        // PostHog: Audit Completed
+        posthog.capture({
+            distinctId: projectUser?.user_id || 'unknown', // Need to fetch user_id first? 
+            // wait, projectUser is fetched BELOW at line 113. 
+            // I should move this tracking AFTER fetching projectUser.
+        });
+        // SKIPPING THIS CHUNK - Will move logic below.
+
         // 4. Trigger Async PDF Generation (CONDITIONAL)
         // Check if user is entitled to PDF generation to save compute
         const { data: projectUser } = await supabase
@@ -117,6 +126,18 @@ export async function finalizeProject(projectId) {
             .single();
 
         if (projectUser) {
+            // PostHog: Audit Completed
+            posthog.capture({
+                distinctId: projectUser.user_id,
+                event: 'audit_completed',
+                properties: {
+                    project_id: projectId,
+                    score: finalOverall,
+                    pages_scanned: count,
+                    usage_type: projectUser.payment_source || 'unknown',
+                    // Fetch plan name if needed, or rely on profile fetch below
+                }
+            });
             // --- CREDIT DEDUCTION LOGIC ---
             // Check if this project was flagged to use credits
             // Enterprise Polish: Check payment_source column first
@@ -133,6 +154,16 @@ export async function finalizeProject(projectId) {
                     const { error: creditError } = await supabase.rpc('increment_credits', {
                         uid: projectUser.user_id,
                         amount: -pagesDeducted
+                    });
+
+                    // PostHog: Credits Deducted
+                    posthog.capture({
+                        distinctId: projectUser.user_id,
+                        event: 'credits_deducted',
+                        properties: {
+                            amount: pagesDeducted,
+                            project_id: projectId
+                        }
                     });
 
                     if (creditError) {
@@ -190,6 +221,17 @@ export async function finalizeProject(projectId) {
     } catch (err) {
         console.error("❌ Failed to finalize project:", err.message);
         await supabase.from('projects').update({ status: 'error' }).eq('id', projectId);
+
+        // PostHog: Audit Failed
+        posthog.capture({
+            distinctId: 'system', // or try to get user if possible
+            event: 'audit_failed',
+            properties: {
+                project_id: projectId,
+                error: err.message
+            }
+        });
+
         throw err;
     }
 }

@@ -262,7 +262,8 @@ const Layout = {
             const data = await response.json();
             // Data structure: { plan, credits, usage: { used, limit }, ... }
 
-            const planName = (data.plan || 'Free').charAt(0).toUpperCase() + (data.plan || 'Free').slice(1) + ' Plan';
+            const planKey = (data.plan || 'Free');
+            const planName = planKey.toUpperCase() + ' PLAN';
             const credits = data.credits || 0;
             const used = data.usage?.used || 0;
             const limit = data.usage?.limit || 0;
@@ -279,15 +280,30 @@ const Layout = {
                 sideProgress.style.width = `${pct}%`;
             }
 
-            // Update Top Bar (Desktop)
+            // Update Top Bar (Desktop) - Styled as Pill
             const topPlan = document.getElementById('topbar-plan');
             const topAudits = document.getElementById('topbar-audits');
             const topLimit = document.getElementById('topbar-limit');
             const topCredits = document.getElementById('topbar-credits');
 
             if (topPlan) topPlan.textContent = planName;
-            if (topAudits) topAudits.textContent = used;
-            if (topLimit) topLimit.textContent = limit;
+
+            // UX Improvement: Show Remaining / Total
+            if (topAudits && topLimit) {
+                const remaining = Math.max(0, limit - used);
+                topAudits.textContent = remaining;
+                topLimit.textContent = limit;
+
+                // Optional: Update parent text to "Audits Left" if possible, 
+                // but strictly following user request: "{remaining}/{total} Audits"
+                // The HTML structure is <span id="audits"></span>/<span id="limit"></span> Audits
+                // So it will read: "68/75 Audits" (which is ambiguous but what was asked in one example).
+                // Wait, user asked: "[ TEAM PLAN ] | 68 / 75 Audits Left | 1000 Credits"
+                // Let's try to append "Left" to the parent if not already there, 
+                // or just rely on the user understanding "68/75" in context of "Left".
+                // I'll stick to the numbers as requested in the React snippet: "{usage.remainingAudits}/{usage.totalAudits} Audits"
+            }
+
             if (topCredits) topCredits.textContent = credits;
 
         } catch (e) {
