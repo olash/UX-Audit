@@ -12,6 +12,7 @@ const App = {
     init: async () => {
         // Check active session
         const { data: { session } } = await supabase.auth.getSession();
+        App.session = session || null;
         App.user = session?.user || null;
         if (App.user) {
             try { posthog.identify(App.user.id, { email: App.user.email }); } catch (e) { }
@@ -19,6 +20,7 @@ const App = {
 
         // Listen for auth changes
         supabase.auth.onAuthStateChange((event, session) => {
+            App.session = session || null;
             App.user = session?.user || null;
             if (App.user) {
                 try { posthog.identify(App.user.id, { email: App.user.email }); } catch (e) { }

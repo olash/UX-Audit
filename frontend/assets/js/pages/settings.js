@@ -250,13 +250,8 @@ async function loadUsageStats() {
     `;
 
     try {
-        const res = await fetch('/api/user/usage', {
-            headers: { 'Authorization': `Bearer ${App.session.access_token}` }
-        });
+        const data = await App.api.get('/user/usage');
 
-        if (!res.ok) throw new Error("Failed to fetch usage");
-
-        const data = await res.json();
         // Structure: { plan, audits_per_month, audits_used, audits_remaining, credits, reset_date }
 
         const planKey = (data.plan || 'free').toLowerCase();

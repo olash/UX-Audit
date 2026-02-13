@@ -261,16 +261,7 @@ const Layout = {
         if (!container) return;
 
         try {
-            const token = App.session?.access_token;
-            if (!token) return;
-
-            const res = await fetch('/api/user/usage', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!res.ok) throw new Error('Failed to fetch usage');
-
-            const data = await res.json();
+            const data = await App.api.get('/user/usage');
             // Data: { plan, audits_per_month, audits_used, audits_remaining, credits }
 
             const plan = (data.plan || 'freemium').toLowerCase();
