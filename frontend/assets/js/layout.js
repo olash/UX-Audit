@@ -290,7 +290,10 @@ const Layout = {
 
                 // Force visibility
                 const container = document.getElementById('topbar-usage');
-                if (container) container.classList.remove('hidden');
+                if (container) {
+                    container.classList.remove('hidden');
+                    container.style.display = 'flex'; // Explicitly set display to flex to override any potential CSS hiding
+                }
             }
 
             if (topCredits) topCredits.textContent = usage.credits_remaining;
