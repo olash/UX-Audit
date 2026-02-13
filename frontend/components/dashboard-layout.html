@@ -81,7 +81,34 @@
 
             <!-- Right Actions -->
             <div class="flex items-center gap-4">
-                <!-- Usage Stats (Top Bar) - REMOVED -->
+                <!-- Usage Stats (Top Bar) -->
+                <div class="hidden md:flex items-center gap-3 mr-2" id="topbar-usage" style="display: none;">
+                    <!-- Plan Badge -->
+                    <span id="topbar-plan-badge"
+                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200">
+                        Free Plan
+                    </span>
+
+                    <!-- Divider -->
+                    <div class="h-4 w-px bg-slate-200"></div>
+
+                    <!-- Audits -->
+                    <div class="flex items-center gap-1.5 text-xs font-medium text-slate-600"
+                        title="Audits remaining this month">
+                        <span class="iconify text-slate-400" data-icon="lucide:bar-chart-2" data-width="14"></span>
+                        <span id="topbar-audits-text">-- / -- Audits</span>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="h-4 w-px bg-slate-200"></div>
+
+                    <!-- Credits -->
+                    <div class="flex items-center gap-1.5 text-xs font-medium text-slate-600"
+                        title="Extra credits available">
+                        <span class="iconify text-amber-500" data-icon="lucide:coins" data-width="14"></span>
+                        <span id="topbar-credits-text">-- Credits</span>
+                    </div>
+                </div>
 
                 <div class="h-8 w-px bg-slate-200 mx-1"></div>
 
