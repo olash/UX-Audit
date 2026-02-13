@@ -241,79 +241,70 @@ async function loadUsageStats() {
     // We wait a tick for DOM just in case, though usually fine here
     setTimeout(async () => {
         try {
-            // Use /api/me for consistent usage stats (same as Top Bar)
             const token = App.session?.access_token;
             if (!token) return;
 
-            const response = await fetch('/api/me', {
+            const response = await fetch('/api/usage', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            if (!response.ok) throw new Error('Failed to fetch user data');
+            if (!response.ok) return;
 
-            const data = await response.json();
-            // Data structure: { plan, credits, audits: { used, limit }, pages: { limit } }
-
-            const planKey = (data.plan || 'free').toLowerCase();
-            const currentPlan = PLANS[planKey] || PLANS.free;
+            const usage = await response.json();
+            console.log('[Settings] /api/usage response:', usage);
 
             // Update UI
             if (document.getElementById('plan-name')) {
                 // Capitalize first letter
-                const displayPlan = planKey.charAt(0).toUpperCase() + planKey.slice(1);
-                document.getElementById('plan-name').textContent = displayPlan;
+                const displayPlan = (usage.plan || 'Free').charAt(0).toUpperCase() + (usage.plan || 'free').slice(1);
+                document.getElementById('plan-name').textContent = displayPlan + ' Plan';
             }
             if (document.getElementById('plan-badge')) {
                 document.getElementById('plan-badge').textContent = 'Active';
             }
             if (document.getElementById('plan-description')) {
                 document.getElementById('plan-description').textContent =
-                    planKey === 'free' ? 'You are currently on the free tier. Upgrade to unlock more power.'
-                        : `You are on the ${currentPlan.name} plan. Thank you for your support!`;
+                    usage.plan === 'free' ? 'You are currently on the free tier. Upgrade to unlock more power.'
+                        : `You are on the ${usage.plan} plan. Thank you for your support!`;
             }
 
             // Dynamic Feature List
             if (document.getElementById('plan-feature-audits')) {
-                // Prefer backend limit, fallback to config
-                const limitDisplay = data.usage?.limit || data.audits?.limit || currentPlan.auditLimit;
-                document.getElementById('plan-feature-audits').textContent = limitDisplay;
+                document.getElementById('plan-feature-audits').textContent = usage.audits_per_month;
             }
 
-            // Usage Stats
-            const usageObj = data.usage || data.audits || {};
-            const used = usageObj.used || 0;
-            const limit = usageObj.limit || currentPlan.auditLimit;
-            const percentage = limit > 0 ? Math.min((used / limit) * 100, 100) : 100;
-
+            // Usage Stats (Black Mark)
             if (document.getElementById('stat-usage-text')) {
-                document.getElementById('stat-usage-text').textContent = used;
+                document.getElementById('stat-usage-text').textContent = usage.audits_used;
             }
             if (document.getElementById('stat-usage-limit')) {
-                document.getElementById('stat-usage-limit').textContent = `/ ${limit}`;
+                document.getElementById('stat-usage-limit').textContent = `/ ${usage.audits_per_month}`;
             }
 
             if (document.getElementById('stat-usage-bar')) {
+                const percentage = usage.audits_per_month > 0
+                    ? Math.min((usage.audits_used / usage.audits_per_month) * 100, 100)
+                    : 100;
+
                 document.getElementById('stat-usage-bar').style.width = `${percentage}%`;
                 if (percentage > 90) document.getElementById('stat-usage-bar').classList.add('bg-red-500');
                 else document.getElementById('stat-usage-bar').classList.remove('bg-red-500');
             }
 
             if (document.getElementById('stat-pages-limit')) {
-                // Use backend page limit if available, else plan default
-                const pgLimit = data.pages?.limit || currentPlan.pageLimit;
-                document.getElementById('stat-pages-limit').textContent = pgLimit;
+                document.getElementById('stat-pages-limit').textContent = usage.pages_per_audit;
             }
 
-            // Credits
+            // Credits (Pink Mark)
             if (document.getElementById('credits-balance')) {
-                document.getElementById('credits-balance').textContent = data.credits || 0;
+                document.getElementById('credits-balance').textContent = usage.credits_remaining;
             }
 
             // Button Toggle
             const upgradeBtn = document.getElementById('upgrade-btn');
             const billingBtn = document.getElementById('billing-btn');
 
-            if (planKey === 'free') {
+            if (usage.plan === 'free') { // Changed from planKey to usage.plan
                 if (upgradeBtn) upgradeBtn.style.display = 'inline-flex';
                 if (billingBtn) billingBtn.style.display = 'none';
             } else {

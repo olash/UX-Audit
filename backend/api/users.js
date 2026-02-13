@@ -29,9 +29,13 @@ router.get("/me", async (req, res) => {
             id: user.id,
             email: user.email,
             plan: stats.plan,
-            credits: stats.credits,
-            usage: stats.audits, // { used, limit }
-            pages: stats.pages, // { limit }
+            credits: stats.credits_remaining,
+            usage: {
+                used: stats.audits_used,
+                limit: stats.audits_per_month,
+                remaining: stats.audits_remaining
+            },
+            pages: { limit: stats.pages_per_audit },
             user_metadata: user.user_metadata,
             created_at: user.created_at
         });
@@ -47,8 +51,8 @@ router.get("/usage", async (req, res) => {
         const user = await getUserFromRequest(req);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-        const usage = await checkUsage(user.id);
-        res.json(usage);
+        const stats = await getUsageStats(user.id);
+        res.json(stats);
     } catch (error) {
         console.error("Error fetching usage:", error);
         res.status(500).json({ error: "Failed to fetch usage" });

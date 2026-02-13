@@ -13,10 +13,6 @@ export async function getUsageStats(userId) {
     const credits = profile?.credits || 0;
 
     const entitlements = PLAN_ENTITLEMENTS[planName] || PLAN_ENTITLEMENTS.free;
-    const limits = {
-        audits: entitlements.auditsPerMonth,
-        pages: entitlements.maxPagesPerAudit
-    };
 
     // 2. Count Audits this month
     const now = new Date();
@@ -33,16 +29,17 @@ export async function getUsageStats(userId) {
         throw new Error("Could not verify usage limits");
     }
 
+    const auditsUsed = count || 0;
+    const auditsRemaining = Math.max(entitlements.auditsPerMonth - auditsUsed, 0);
+
+    // Strict JSON structure as requested
     return {
         plan: planName,
-        credits: credits,
-        audits: {
-            used: count,
-            limit: limits.audits
-        },
-        pages: {
-            limit: limits.pages
-        }
+        audits_per_month: entitlements.auditsPerMonth,
+        audits_used: auditsUsed,
+        audits_remaining: auditsRemaining,
+        credits_remaining: credits,
+        pages_per_audit: entitlements.maxPagesPerAudit
     };
 }
 
@@ -50,20 +47,22 @@ export async function checkUsage(userId) {
     try {
         const stats = await getUsageStats(userId);
 
-        console.log(`[Usage Check] User: ${userId} | Plan: ${stats.plan} | Credits: ${stats.credits} | Used: ${stats.audits.used}/${stats.audits.limit}`);
+        console.log(`[Usage Check] User: ${userId} | Plan: ${stats.plan} | Credits: ${stats.credits_remaining} | Used: ${stats.audits_used}/${stats.audits_per_month}`);
 
-        if (stats.audits.used >= stats.audits.limit) {
+        if (stats.audits_used >= stats.audits_per_month) {
             return {
                 allowed: false,
-                reason: `Monthly audit limit reached (${stats.audits.used}/${stats.audits.limit}). Upgrade your plan or use credits.`
+                reason: `Monthly audit limit reached (${stats.audits_used}/${stats.audits_per_month}). Upgrade your plan or use credits.`
             };
         }
 
         return {
             allowed: true,
-            pageLimit: stats.pages.limit,
+            pageLimit: stats.pages_per_audit,
             plan: stats.plan,
-            credits: stats.credits
+            credits: stats.credits_remaining,
+            // Pass full stats for advanced logic if needed
+            stats: stats
         };
     } catch (e) {
         return { allowed: false, reason: "Error checking usage: " + e.message };
