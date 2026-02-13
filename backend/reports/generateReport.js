@@ -4,6 +4,24 @@ import path from 'path'; // Step 1: Import path correctly
 import { supabase } from "../db/supabase.js";
 import { renderReportHTML } from './reportTemplate.js';
 import { DIMENSIONS } from '../ai/scoring.config.js';
+import fs from 'fs';
+
+// Helper to get logo base64
+function getLogoBase64() {
+    try {
+        // Resolve path relative to this file? Or use absolute/cwd?
+        // Using CWD of the process (usually backend root)
+        const logoPath = path.resolve('..', 'frontend', 'assets', 'images', 'logo.png');
+        if (fs.existsSync(logoPath)) {
+            const bitmap = fs.readFileSync(logoPath);
+            return `data:image/png;base64,${bitmap.toString('base64')}`;
+        }
+        return null;
+    } catch (e) {
+        console.warn("Could not load logo for PDF:", e);
+        return null;
+    }
+}
 
 /**
  * Generates a PDF report using Playwright and uploads it to Supabase.
@@ -72,7 +90,8 @@ export async function generateReport(projectId) {
         });
 
         // 3. Render HTML
-        const html = renderReportHTML({ project, pages, issues, breakdown });
+        const logoBase64 = getLogoBase64();
+        const html = renderReportHTML({ project, pages, issues, breakdown, logoBase64 });
 
         // 4. Set Content
         await page.setContent(html, {
