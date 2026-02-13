@@ -173,125 +173,178 @@ function setupAvatarHandler() {
     // --- UPLOAD HANDLER ---
     if (!avatarUpload) return;
 
-    // --- SUBSCRIPTION & BILLING LOGIC ---
+    avatarUpload.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
 
-    // Listen for global usage updates (from Layout.loadUsage)
-    document.addEventListener('usageUpdated', (e) => {
-        renderSubscriptionSection(e.detail);
-        renderPlanComparison(e.detail); // Re-render to update "Current Plan" button states
+        if (!file) return;
+
+        if (file.size === 0 || !file.type.startsWith('image/')) {
+            App.toast('error', 'Invalid file. Please upload a valid image (PNG or JPEG).');
+            return;
+        }
+
+        const { data: { user } } = await supabase.auth.getUser();
+        const filePath = `${user.id}.png`;
+
+        try {
+            const { error } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, file, {
+                    upsert: true,
+                    contentType: file.type
+                });
+
+            if (error) throw error;
+
+            const { data: publicData } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath);
+
+            const publicUrl = `${publicData.publicUrl}?t=${new Date().getTime()}`;
+
+            const { error: updateError } = await supabase.auth.updateUser({
+                data: {
+                    avatar_url: publicUrl
+                }
+            });
+
+            if (updateError) throw updateError;
+
+            document.getElementById('avatar').src = publicUrl;
+            App.toast('success', 'Avatar updated');
+
+            // Re-enable remove button
+            if (removeBtn) {
+                removeBtn.disabled = false;
+                removeBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+
+        } catch (err) {
+            console.error('Avatar upload failed', err);
+            App.toast('error', 'Failed to upload avatar: ' + (err.message || 'Unknown error'));
+        }
+    });
+}
+
+// --- SUBSCRIPTION & BILLING LOGIC ---
+
+// Listen for global usage updates (from Layout.loadUsage)
+document.addEventListener('usageUpdated', (e) => {
+    renderSubscriptionSection(e.detail);
+    renderPlanComparison(e.detail); // Re-render to update "Current Plan" button states
+});
+
+function initSubscriptionTabs() {
+    const tabOverview = document.getElementById('tab-overview');
+    const tabPlans = document.getElementById('tab-plans');
+    const viewOverview = document.getElementById('view-overview');
+    const viewPlans = document.getElementById('view-plans');
+
+    if (!tabOverview || !tabPlans) return;
+
+    tabOverview.addEventListener('click', () => {
+        tabOverview.classList.add('bg-white', 'shadow-sm', 'text-slate-900');
+        tabOverview.classList.remove('text-slate-500');
+        tabPlans.classList.remove('bg-white', 'shadow-sm', 'text-slate-900');
+        tabPlans.classList.add('text-slate-500');
+
+        viewOverview.classList.remove('hidden');
+        viewPlans.classList.add('hidden');
     });
 
-    function initSubscriptionTabs() {
-        const tabOverview = document.getElementById('tab-overview');
-        const tabPlans = document.getElementById('tab-plans');
-        const viewOverview = document.getElementById('view-overview');
-        const viewPlans = document.getElementById('view-plans');
+    tabPlans.addEventListener('click', () => {
+        tabPlans.classList.add('bg-white', 'shadow-sm', 'text-slate-900');
+        tabPlans.classList.remove('text-slate-500');
+        tabOverview.classList.remove('bg-white', 'shadow-sm', 'text-slate-900');
+        tabOverview.classList.add('text-slate-500');
 
-        if (!tabOverview || !tabPlans) return;
+        viewOverview.classList.add('hidden');
+        viewPlans.classList.remove('hidden');
+    });
 
-        tabOverview.addEventListener('click', () => {
-            tabOverview.classList.add('bg-white', 'shadow-sm', 'text-slate-900');
-            tabOverview.classList.remove('text-slate-500');
-            tabPlans.classList.remove('bg-white', 'shadow-sm', 'text-slate-900');
-            tabPlans.classList.add('text-slate-500');
+    // Helper to jump to plans
+    window.showPlansTab = () => tabPlans.click();
+}
 
-            viewOverview.classList.remove('hidden');
-            viewPlans.classList.add('hidden');
-        });
+/**
+ * Renders the Overview Tab (Current Plan + Usage)
+ */
+function renderSubscriptionSection(usage) {
+    if (!usage) return;
 
-        tabPlans.addEventListener('click', () => {
-            tabPlans.classList.add('bg-white', 'shadow-sm', 'text-slate-900');
-            tabPlans.classList.remove('text-slate-500');
-            tabOverview.classList.remove('bg-white', 'shadow-sm', 'text-slate-900');
-            tabOverview.classList.add('text-slate-500');
+    // 1. Current Plan Card
+    const planNameEl = document.getElementById('settings-plan-name');
+    const planDescEl = document.getElementById('settings-plan-desc');
+    const iconContainer = document.getElementById('plan-icon-container');
 
-            viewOverview.classList.add('hidden');
-            viewPlans.classList.remove('hidden');
-        });
+    if (planNameEl) {
+        const planKey = (usage.plan || 'free').toLowerCase();
+        planNameEl.textContent = planKey.charAt(0).toUpperCase() + planKey.slice(1) + ' Plan';
 
-        // Helper to jump to plans
-        window.showPlansTab = () => tabPlans.click();
-    }
-
-    /**
-     * Renders the Overview Tab (Current Plan + Usage)
-     */
-    function renderSubscriptionSection(usage) {
-        if (!usage) return;
-
-        // 1. Current Plan Card
-        const planNameEl = document.getElementById('settings-plan-name');
-        const planDescEl = document.getElementById('settings-plan-desc');
-        const iconContainer = document.getElementById('plan-icon-container');
-
-        if (planNameEl) {
-            const planKey = (usage.plan || 'free').toLowerCase();
-            planNameEl.textContent = planKey.charAt(0).toUpperCase() + planKey.slice(1) + ' Plan';
-
-            // Icon Styling
-            if (iconContainer) {
-                iconContainer.className = 'w-12 h-12 rounded-full flex items-center justify-center ';
-                if (planKey === 'starter') iconContainer.classList.add('bg-blue-100', 'text-blue-600');
-                else if (planKey === 'pro') iconContainer.classList.add('bg-emerald-100', 'text-emerald-600');
-                else if (planKey === 'team') iconContainer.classList.add('bg-purple-100', 'text-purple-600');
-                else iconContainer.classList.add('bg-slate-100', 'text-slate-500');
-            }
-
-            if (planDescEl) {
-                planDescEl.textContent = `You are currently on the ${planKey} plan.`;
-            }
+        // Icon Styling
+        if (iconContainer) {
+            iconContainer.className = 'w-12 h-12 rounded-full flex items-center justify-center ';
+            if (planKey === 'starter') iconContainer.classList.add('bg-blue-100', 'text-blue-600');
+            else if (planKey === 'pro') iconContainer.classList.add('bg-emerald-100', 'text-emerald-600');
+            else if (planKey === 'team') iconContainer.classList.add('bg-purple-100', 'text-purple-600');
+            else iconContainer.classList.add('bg-slate-100', 'text-slate-500');
         }
 
-        // 2. Usage Grid
-        const usedEl = document.getElementById('usage-audits-used');
-        const limitEl = document.getElementById('usage-audits-limit');
-        const barEl = document.getElementById('usage-audits-bar');
-        const remainEl = document.getElementById('usage-audits-remaining');
-        const warningEl = document.getElementById('usage-warning');
-        const creditsEl = document.getElementById('usage-credits');
-
-        if (usedEl) usedEl.textContent = usage.audits_used;
-        if (limitEl) limitEl.textContent = usage.audits_per_month;
-
-        if (barEl) {
-            const pct = usage.audits_per_month > 0
-                ? Math.min((usage.audits_used / usage.audits_per_month) * 100, 100)
-                : 100;
-            barEl.style.width = `${pct}%`;
-
-            if (usage.audits_remaining === 0) {
-                barEl.classList.add('bg-red-500');
-                barEl.classList.remove('bg-slate-800');
-                if (warningEl) warningEl.classList.remove('hidden');
-            } else {
-                barEl.classList.remove('bg-red-500');
-                barEl.classList.add('bg-slate-800');
-                if (warningEl) warningEl.classList.add('hidden');
-            }
+        if (planDescEl) {
+            planDescEl.textContent = `You are currently on the ${planKey} plan.`;
         }
-
-        if (remainEl) remainEl.textContent = `${usage.audits_remaining} remaining`;
-        if (creditsEl) creditsEl.textContent = usage.credits_remaining;
     }
 
-    /**
-     * Renders the Plans Comparison Grid
-     */
-    function renderPlanComparison(currentUsage) {
-        const container = document.getElementById('plans-container');
-        if (!container) return;
+    // 2. Usage Grid
+    const usedEl = document.getElementById('usage-audits-used');
+    const limitEl = document.getElementById('usage-audits-limit');
+    const barEl = document.getElementById('usage-audits-bar');
+    const remainEl = document.getElementById('usage-audits-remaining');
+    const warningEl = document.getElementById('usage-warning');
+    const creditsEl = document.getElementById('usage-credits');
 
-        const currentPlanKey = (currentUsage?.plan || 'free').toLowerCase();
+    if (usedEl) usedEl.textContent = usage.audits_used;
+    if (limitEl) limitEl.textContent = usage.audits_per_month;
 
-        // Map through PLANS config
-        const html = Object.keys(PLANS).map(key => {
-            const plan = PLANS[key];
-            const isCurrent = key === currentPlanKey;
-            const btnState = isCurrent
-                ? `<button disabled class="w-full py-2 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200 opacity-75 cursor-default">Current Plan</button>`
-                : `<button onclick="App.checkout('${plan.variantId}')" class="w-full py-2 rounded-md text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors">Upgrade</button>`;
+    if (barEl) {
+        const pct = usage.audits_per_month > 0
+            ? Math.min((usage.audits_used / usage.audits_per_month) * 100, 100)
+            : 100;
+        barEl.style.width = `${pct}%`;
 
-            return `
+        if (usage.audits_remaining === 0) {
+            barEl.classList.add('bg-red-500');
+            barEl.classList.remove('bg-slate-800');
+            if (warningEl) warningEl.classList.remove('hidden');
+        } else {
+            barEl.classList.remove('bg-red-500');
+            barEl.classList.add('bg-slate-800');
+            if (warningEl) warningEl.classList.add('hidden');
+        }
+    }
+
+    if (remainEl) remainEl.textContent = `${usage.audits_remaining} remaining`;
+    if (creditsEl) creditsEl.textContent = usage.credits_remaining;
+}
+
+/**
+ * Renders the Plans Comparison Grid
+ */
+function renderPlanComparison(currentUsage) {
+    const container = document.getElementById('plans-container');
+    if (!container) return;
+
+    const currentPlanKey = (currentUsage?.plan || 'free').toLowerCase();
+
+    // Map through PLANS config
+    const html = Object.keys(PLANS).map(key => {
+        const plan = PLANS[key];
+        const isCurrent = key === currentPlanKey;
+        const btnState = isCurrent
+            ? `<button disabled class="w-full py-2 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200 opacity-75 cursor-default">Current Plan</button>`
+            : `<button onclick="App.checkout('${plan.variantId}')" class="w-full py-2 rounded-md text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors">Upgrade</button>`;
+
+        return `
             <div class="border rounded-lg p-5 flex flex-col ${isCurrent ? 'border-emerald-500 ring-1 ring-emerald-500 bg-emerald-50/10' : 'border-slate-200 bg-white'}">
                 <div class="mb-4">
                     <h4 class="text-sm font-bold text-slate-900 capitalize">${key}</h4>
@@ -315,26 +368,26 @@ function setupAvatarHandler() {
                 ${btnState}
             </div>
         `;
-        }).join('');
+    }).join('');
 
-        container.innerHTML = html;
-        if (window.Iconify) window.Iconify.scan(container);
-    }
+    container.innerHTML = html;
+    if (window.Iconify) window.Iconify.scan(container);
+}
 
-    /**
-     * Renders Credit Packs
-     */
-    function renderCreditPacks() {
-        const container = document.getElementById('credits-container');
-        if (!container) return;
+/**
+ * Renders Credit Packs
+ */
+function renderCreditPacks() {
+    const container = document.getElementById('credits-container');
+    if (!container) return;
 
-        const packs = [
-            { credits: 50, price: 15, id: CREDIT_PACKS.credits_50 },
-            { credits: 200, price: 50, id: CREDIT_PACKS.credits_200 },
-            { credits: 500, price: 100, id: CREDIT_PACKS.credits_500 }
-        ];
+    const packs = [
+        { credits: 50, price: 15, id: CREDIT_PACKS.credits_50 },
+        { credits: 200, price: 50, id: CREDIT_PACKS.credits_200 },
+        { credits: 500, price: 100, id: CREDIT_PACKS.credits_500 }
+    ];
 
-        const html = packs.map(pack => `
+    const html = packs.map(pack => `
         <div class="border border-slate-200 rounded-lg p-4 bg-white hover:border-indigo-300 transition-colors">
             <div class="flex justify-between items-start mb-2">
                 <div>
@@ -349,33 +402,33 @@ function setupAvatarHandler() {
         </div>
     `).join('');
 
-        container.innerHTML = html;
+    container.innerHTML = html;
+}
+
+// Initial Call when settings.html loads
+setTimeout(() => {
+    initSubscriptionTabs();
+
+    // If usage is already loaded in Layout
+    if (App.usage) {
+        renderSubscriptionSection(App.usage);
+        renderPlanComparison(App.usage);
+    } else {
+        // Fallback or wait for event
+        renderPlanComparison(); // Render generic plan cards at least
     }
 
-    // Initial Call when settings.html loads
-    setTimeout(() => {
-        initSubscriptionTabs();
+    renderCreditPacks(); // Static config
+}, 100);
+// loadUsageStats: Removed per user request
 
-        // If usage is already loaded in Layout
-        if (App.usage) {
-            renderSubscriptionSection(App.usage);
-            renderPlanComparison(App.usage);
-        } else {
-            // Fallback or wait for event
-            renderPlanComparison(); // Render generic plan cards at least
-        }
-
-        renderCreditPacks(); // Static config
-    }, 100);
-    // loadUsageStats: Removed per user request
-
-    // Global helper for billing portal
-    window.openBillingPortal = async () => {
-        try {
-            const res = await App.api.post('/create-portal-session'); // Assuming this endpoint exists or will exist
-            if (res.url) window.location.href = res.url;
-            else alert("Billing portal not configured yet.");
-        } catch (e) {
-            alert("Could not open billing portal: " + e.message);
-        }
-    };
+// Global helper for billing portal
+window.openBillingPortal = async () => {
+    try {
+        const res = await App.api.post('/create-portal-session'); // Assuming this endpoint exists or will exist
+        if (res.url) window.location.href = res.url;
+        else alert("Billing portal not configured yet.");
+    } catch (e) {
+        alert("Could not open billing portal: " + e.message);
+    }
+};

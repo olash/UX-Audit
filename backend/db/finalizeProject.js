@@ -109,13 +109,7 @@ export async function finalizeProject(projectId) {
         if (updateError) throw updateError;
         console.log("✅ Project successfully finalized.");
 
-        // PostHog: Audit Completed
-        posthog.capture({
-            distinctId: projectUser?.user_id || 'unknown', // Need to fetch user_id first? 
-            // wait, projectUser is fetched BELOW at line 113. 
-            // I should move this tracking AFTER fetching projectUser.
-        });
-        // SKIPPING THIS CHUNK - Will move logic below.
+
 
         // 4. Trigger Async PDF Generation (CONDITIONAL)
         // Check if user is entitled to PDF generation to save compute
