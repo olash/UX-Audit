@@ -336,7 +336,7 @@ function renderPages(pages) {
     screenshotsContainer.innerHTML = '';
 
     // Reset grids class for screenshots if needed or ensure it has grid
-    screenshotsContainer.className = 'grid grid-cols-2 md:grid-cols-4 gap-4 p-6 transition-all duration-300 ease-in-out';
+    screenshotsContainer.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-6 transition-all duration-300 ease-in-out';
 
     let screenshotCount = 0;
 
@@ -461,9 +461,9 @@ function renderIdentifiedIssues(issues) {
                         
                         <div class="flex gap-2">
                             ${issue.pages && issue.pages.url ? `
-                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 text-[10px] text-slate-500 border border-slate-200">
-                                <span class="iconify" data-icon="lucide:link" data-width="10"></span>
-                                ${new URL(issue.pages.url).pathname}
+                            <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 text-[10px] text-slate-500 border border-slate-200 max-w-[150px]">
+                                <span class="iconify shrink-0" data-icon="lucide:link" data-width="10"></span>
+                                <span class="truncate">${new URL(issue.pages.url).pathname}</span>
                             </span>` : ''}
                             ${issue.category ? `<span class="inline-flex items-center px-1.5 py-0.5 rounded bg-slate-100 text-[10px] text-slate-500 border border-slate-200">${issue.category}</span>` : ''}
                         </div>
@@ -534,9 +534,9 @@ function renderSuggestedFixes(fixes) {
                         </div>
                          <div class="flex gap-2">
                              ${fix.pages && fix.pages.url ? `
-                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white text-[10px] text-slate-400 border border-slate-200 shadow-sm">
-                                    <span class="iconify" data-icon="lucide:link" data-width="10"></span>
-                                    ${new URL(fix.pages.url).pathname}
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-white text-[10px] text-slate-400 border border-slate-200 shadow-sm max-w-[150px]">
+                                    <span class="iconify shrink-0" data-icon="lucide:link" data-width="10"></span>
+                                    <span class="truncate">${new URL(fix.pages.url).pathname}</span>
                                 </span>
                              ` : ''}
                         </div>

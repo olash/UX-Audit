@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 <span class="iconify" data-icon="lucide:globe" data-width="12"></span>
                             </div>
                             <div>
-                                <div class="text-sm font-medium text-slate-900">${displayUrl}</div>
+                                <div class="text-sm font-medium text-slate-900 truncate max-w-[200px] sm:max-w-[300px]">${displayUrl}</div>
                                 <div class="text-[10px] text-slate-400">${date}</div>
                             </div>
                         </div>

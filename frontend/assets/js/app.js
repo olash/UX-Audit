@@ -16,6 +16,8 @@ const App = {
         App.user = session?.user || null;
         if (App.user) {
             try { posthog.identify(App.user.id, { email: App.user.email }); } catch (e) { }
+            App.startSessionTimer();
+            App.setupActivityListeners();
         }
 
         // Listen for auth changes
@@ -24,6 +26,11 @@ const App = {
             App.user = session?.user || null;
             if (App.user) {
                 try { posthog.identify(App.user.id, { email: App.user.email }); } catch (e) { }
+                App.startSessionTimer();
+                App.setupActivityListeners();
+            } else {
+                if (App.sessionTimer) clearTimeout(App.sessionTimer);
+                if (App.warningTimer) clearTimeout(App.warningTimer);
             }
             if (event === 'USER_UPDATED' || event === 'SIGNED_IN') {
                 // Update header if layout is loaded
@@ -242,6 +249,65 @@ const App = {
             }
             App.user = session.user;
         }
+    },
+
+    // Session Timeout Logic
+    sessionTimer: null,
+    warningTimer: null,
+    INACTIVITY_LIMIT: 10 * 60 * 1000, // 10 minutes
+    WARNING_LIMIT: 9 * 60 * 1000,     // 9 minutes
+
+    startSessionTimer: () => {
+        // Clear existing
+        if (App.sessionTimer) clearTimeout(App.sessionTimer);
+        if (App.warningTimer) clearTimeout(App.warningTimer);
+
+        // Only start if user is logged in
+        if (!App.user) return;
+
+        // Set Warning Trigger
+        App.warningTimer = setTimeout(() => {
+            const modal = document.getElementById('session-warning-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        }, App.WARNING_LIMIT);
+
+        // Set Logout Trigger
+        App.sessionTimer = setTimeout(() => {
+            App.logout();
+        }, App.INACTIVITY_LIMIT);
+    },
+
+    extendSession: () => {
+        const modal = document.getElementById('session-warning-modal');
+        if (modal) modal.classList.add('hidden');
+        App.startSessionTimer();
+        console.log("Session extended");
+    },
+
+    setupActivityListeners: () => {
+        const events = ['mousemove', 'keydown', 'click', 'scroll'];
+        const resetHandler = () => {
+            // Only reset if modal is NOT visible (user hasn't triggered warning yet)
+            const modal = document.getElementById('session-warning-modal');
+            if (modal && modal.classList.contains('hidden')) {
+                App.startSessionTimer();
+            }
+        };
+
+        // Throttle slightly to avoid performance hit
+        let timeout;
+        events.forEach(event => {
+            window.addEventListener(event, () => {
+                if (!timeout) {
+                    timeout = setTimeout(() => {
+                        resetHandler();
+                        timeout = null;
+                    }, 1000);
+                }
+            });
+        });
     },
 
     // UI Helpers

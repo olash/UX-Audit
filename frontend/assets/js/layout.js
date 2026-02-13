@@ -296,15 +296,15 @@ const Layout = {
             // Render Capsule
             container.innerHTML = `
                 <button id="usageBtn" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-slate-300 rounded-full pl-1 pr-3 py-1 transition-all shadow-sm group">
-                    <span class="px-2 py-0.5 rounded-full border text-[10px] font-semibold ${badgeClass}">
+                    <span class="px-2 py-0.5 rounded-full border text-[10px] font-semibold ${badgeClass} hidden sm:block">
                         ${planDisplay}
                     </span>
-                    <span class="text-xs font-medium text-slate-600 group-hover:text-slate-900">
+                    <span class="text-xs font-medium text-slate-600 group-hover:text-slate-900 hidden md:block">
                         ${mainText}
                     </span>
-                    <span class="text-slate-300">•</span>
+                    <span class="text-slate-300 hidden md:block">•</span>
                     <span class="text-xs font-medium text-slate-500 group-hover:text-slate-700">
-                        ${data.credits} Credits
+                        ${data.credits} <span class="hidden sm:inline">Credits</span><span class="sm:hidden">Cr</span>
                     </span>
                     <span class="w-1.5 h-1.5 rounded-full ${indicatorColor}"></span>
                 </button>
