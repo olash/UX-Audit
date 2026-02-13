@@ -1,6 +1,7 @@
 import express from "express";
 import { supabase } from "../db/supabase.js";
 import { checkUsage } from "../utils/usage.js";
+import { PLAN_ENTITLEMENTS } from "../config/pricing.js";
 
 const router = express.Router();
 
@@ -43,14 +44,54 @@ router.get("/me", async (req, res) => {
     }
 });
 
-// GET /api/usage - Get usage stats
-router.get("/usage", async (req, res) => {
+// GET /api/usage - Get usage stats (Detailed for UI)
+// Maps to /api/user/usage as per plan, but keeping /api/usage for consistency or route alias
+router.get(["/usage", "/user/usage"], async (req, res) => {
     try {
         const user = await getUserFromRequest(req);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-        const usage = await checkUsage(user.id);
-        res.json(usage);
+        // 1. Get Plan & Credits
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('plan, credits')
+            .eq('id', user.id)
+            .single();
+
+        const planName = (profile?.plan || 'free').toLowerCase();
+        const credits = profile?.credits || 0;
+
+        // 2. Get Limits
+        const entitlements = PLAN_ENTITLEMENTS[planName] || PLAN_ENTITLEMENTS.free;
+        const auditLimit = entitlements.auditsPerMonth;
+
+        // 3. Count Audits This Month
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+        // Calculate Reset Date (1st of next month)
+        const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+        const { count: auditsUsed } = await supabase
+            .from('projects')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .gte('created_at', startOfMonth);
+
+        const used = auditsUsed || 0;
+        const remaining = Math.max(0, auditLimit - used);
+        const limitReached = used >= auditLimit;
+
+        res.json({
+            plan: planName,
+            audits_per_month: auditLimit,
+            audits_used: used,
+            audits_remaining: remaining,
+            credits: credits,
+            limit_reached: limitReached,
+            reset_date: nextMonth.toISOString()
+        });
+
     } catch (error) {
         console.error("Error fetching usage:", error);
         res.status(500).json({ error: "Failed to fetch usage" });

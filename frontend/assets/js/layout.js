@@ -96,6 +96,7 @@ const Layout = {
 
             // Update User Info in Header
             this.updateHeaderUser();
+            this.updateUsageCapsule();
 
             // Initialize Icons
             if (window.Iconify) window.Iconify.scan();
@@ -249,39 +250,136 @@ const Layout = {
     },
 
     updateSidebarPlan: async function () {
+        // ... kept for sidebar compatibility fallback ...
+    },
+
+    /**
+     * Updates the Top Bar Usage Capsule
+     */
+    updateUsageCapsule: async function () {
+        const container = document.getElementById('usageCapsule');
+        if (!container) return;
+
         try {
             const token = App.session?.access_token;
             if (!token) return;
 
-            const response = await fetch('/api/me', {
+            const res = await fetch('/api/user/usage', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
-            if (!response.ok) return;
+            if (!res.ok) throw new Error('Failed to fetch usage');
 
-            const data = await response.json();
-            // Data structure expected: { id, email, plan: 'free', credits: 0, ... }
-            // Note: /api/me currently returns profile data from `users.js`
+            const data = await res.json();
+            // Data: { plan, audits_per_month, audits_used, audits_remaining, credits }
 
-            // We need usage stats (audits used). /api/me might not have it.
-            // Let's assume we need to fetch it or /api/me has it.
-            // If not, we'll just show plan name for now.
-            // Ideally /api/me should return { plan, usage: { used: X, limit: Y } }
+            const plan = (data.plan || 'freemium').toLowerCase();
+            const planDisplay = plan.charAt(0).toUpperCase() + plan.slice(1);
 
-            const planName = (data.plan || 'Free').charAt(0).toUpperCase() + (data.plan || 'Free').slice(1) + ' Plan';
-            const credits = data.credits || 0;
+            // Badge Colors
+            let badgeClass = 'bg-slate-100 text-slate-600 border-slate-200'; // Free/Default
+            if (plan === 'starter') badgeClass = 'bg-blue-50 text-blue-700 border-blue-200';
+            if (plan === 'pro') badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+            if (plan === 'team') badgeClass = 'bg-purple-50 text-purple-700 border-purple-200';
 
-            const nameEl = document.getElementById('sidebar-plan-name');
-            const usageEl = document.getElementById('sidebar-plan-usage');
+            // Logic for Display
+            // Case 1: Monthly Remaining
+            let mainText = `${data.audits_used}/${data.audits_per_month} Audits`;
+            let subText = `${data.credits} Credits`;
+            let indicatorColor = 'bg-emerald-500';
 
-            if (nameEl) nameEl.textContent = planName;
-            if (usageEl) usageEl.textContent = `${credits} Credits available`;
+            if (data.limit_reached) {
+                // Monthly Exhausted
+                mainText = `${data.audits_used}/${data.audits_per_month} Used`;
+                indicatorColor = 'bg-amber-500'; // Warning
 
-            // Note: To show "Audits used", we'd need to count them. 
-            // For now, showing Credits is more useful for the credit-based system.
+                if (data.credits < 1) {
+                    indicatorColor = 'bg-red-500'; // Critical
+                } else {
+                    subText = `${data.credits} Credits`; // Highlight credits
+                }
+            } else if (data.audits_used / data.audits_per_month >= 0.8) {
+                indicatorColor = 'bg-amber-500'; // Near limit
+            }
+
+            // Render Capsule
+            container.innerHTML = `
+                <button id="usageBtn" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-slate-300 rounded-full pl-1 pr-3 py-1 transition-all shadow-sm group">
+                    <span class="px-2 py-0.5 rounded-full border text-[10px] font-semibold ${badgeClass}">
+                        ${planDisplay}
+                    </span>
+                    <span class="text-xs font-medium text-slate-600 group-hover:text-slate-900">
+                        ${mainText}
+                    </span>
+                    <span class="text-slate-300">•</span>
+                    <span class="text-xs font-medium text-slate-500 group-hover:text-slate-700">
+                        ${data.credits} Credits
+                    </span>
+                    <span class="w-1.5 h-1.5 rounded-full ${indicatorColor}"></span>
+                </button>
+
+                <!-- Dropdown -->
+                <div id="usageDropdown" class="hidden absolute top-full right-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-4 transform origin-top-right transition-all">
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Current Plan</span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeClass}">${planDisplay}</span>
+                    </div>
+                    
+                    <div class="space-y-3 mb-4">
+                        <div>
+                            <div class="flex justify-between text-xs mb-1">
+                                <span class="text-slate-600">Monthly Audits</span>
+                                <span class="font-medium text-slate-900">${data.audits_used} / ${data.audits_per_month}</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                <div class="h-full ${indicatorColor}" style="width: ${Math.min((data.audits_used / data.audits_per_month) * 100, 100)}%"></div>
+                            </div>
+                            <p class="text-[10px] text-slate-400 mt-1">Resets on ${new Date(data.reset_date).toLocaleDateString()}</p>
+                        </div>
+                        
+                        <div class="flex justify-between items-center p-2 bg-slate-50 rounded-lg border border-slate-100">
+                            <span class="text-xs font-medium text-slate-600">Credit Balance</span>
+                            <span class="text-sm font-bold text-slate-900">${data.credits}</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <a href="/pages/Pricing.html" class="flex items-center justify-center px-3 py-2 text-xs font-medium text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors">
+                            Upgrade
+                        </a>
+                        <a href="/pages/Pricing.html" class="flex items-center justify-center px-3 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-50 rounded-lg transition-colors">
+                            Buy Credits
+                        </a>
+                    </div>
+                </div>
+            `;
+
+            // Interaction
+            const btn = document.getElementById('usageBtn');
+            const dropdown = document.getElementById('usageDropdown');
+
+            if (btn && dropdown) {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                });
+
+                // Close on click outside (already handled by global listener likely, but let's Ensure)
+                document.addEventListener('click', (e) => {
+                    if (!btn.contains(e.target) && !dropdown.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                    }
+                });
+            }
+
+            container.classList.remove('hidden');
+
+            // Also update sidebar just in case mobile menu is used
+            this.updateSidebarPlan();
 
         } catch (e) {
-            console.error("Failed to update sidebar", e);
+            console.error("Failed to update usage capsule", e);
+            if (container) container.classList.add('hidden');
         }
     },
 
