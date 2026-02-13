@@ -244,64 +244,10 @@ const Layout = {
             }
         }
 
-        // Trigger Sidebar & Topbar Update
-        this.updateUsageStats();
+        // this.updateUsageStats(); // Removed
     },
 
-    updateUsageStats: async function () {
-        try {
-            const token = App.session?.access_token;
-            if (!token) return;
-
-            const response = await fetch('/api/usage', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!response.ok) return;
-
-            const usage = await response.json();
-            console.log('[Layout] /api/usage response:', usage);
-
-            // Update Sidebar (Legacy/Mobile)
-            const sideName = document.getElementById('sidebar-plan-name');
-            const sideUsage = document.getElementById('sidebar-plan-usage');
-            const sideProgress = document.getElementById('sidebar-plan-progress');
-
-            if (sideName) sideName.textContent = (usage.plan || 'Free') + ' Plan';
-            if (sideUsage) sideUsage.textContent = `${usage.audits_used}/${usage.audits_per_month} Audits`;
-            if (sideProgress) {
-                const pct = usage.audits_per_month > 0 ? Math.min(100, Math.round((usage.audits_used / usage.audits_per_month) * 100)) : 100;
-                sideProgress.style.width = `${pct}%`;
-            }
-
-            // Update Top Bar (Desktop) - Centralized Logic
-            const topPlan = document.getElementById('topbar-plan');
-            const topAudits = document.getElementById('topbar-audits');
-            const topLimit = document.getElementById('topbar-limit'); // This might be "Audits Left" text container in some designs, or just the denominator
-            const topCredits = document.getElementById('topbar-credits');
-
-            if (topPlan) topPlan.textContent = (usage.plan || 'Free').toUpperCase() + ' PLAN';
-
-            // Top Bar: "X/Y Audits Left"
-            // The HTML structure might vary, but typically: <span id="audits">X</span>/<span id="limit">Y</span>
-            if (topAudits && topLimit) {
-                topAudits.textContent = usage.audits_remaining;
-                topLimit.textContent = usage.audits_per_month;
-
-                // Force visibility
-                const container = document.getElementById('topbar-usage');
-                if (container) {
-                    container.classList.remove('hidden');
-                    container.style.display = 'flex'; // Explicitly set display to flex to override any potential CSS hiding
-                }
-            }
-
-            if (topCredits) topCredits.textContent = usage.credits_remaining;
-
-        } catch (e) {
-            console.error("Failed to update usage stats", e);
-        }
-    },
+    // updateUsageStats: Removed per user request
 
     /**
      * Loads a page partial into the main content area

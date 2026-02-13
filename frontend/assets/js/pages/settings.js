@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 4. Initialize Features
     await loadProfile();
-    await loadUsageStats();
+    // await loadUsageStats(); // Removed
 });
 
 async function loadProfile() {
@@ -235,92 +235,7 @@ function setupAvatarHandler() {
     });
 }
 
-async function loadUsageStats() {
-    if (!App.user) return;
-
-    // We wait a tick for DOM just in case, though usually fine here
-    setTimeout(async () => {
-        try {
-            const token = App.session?.access_token;
-            if (!token) return;
-
-            const response = await fetch('/api/usage', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-
-            if (!response.ok) return;
-
-            const usage = await response.json();
-            console.log('[Settings] /api/usage response:', usage);
-
-            // Update UI
-            if (document.getElementById('plan-name')) {
-                // Capitalize first letter
-                const displayPlan = (usage.plan || 'Free').charAt(0).toUpperCase() + (usage.plan || 'free').slice(1);
-                document.getElementById('plan-name').textContent = displayPlan + ' Plan';
-            }
-            if (document.getElementById('plan-badge')) {
-                document.getElementById('plan-badge').textContent = 'Active';
-            }
-            if (document.getElementById('plan-description')) {
-                document.getElementById('plan-description').textContent =
-                    usage.plan === 'free' ? 'You are currently on the free tier. Upgrade to unlock more power.'
-                        : `You are on the ${usage.plan} plan. Thank you for your support!`;
-            }
-
-            // Dynamic Feature List
-            if (document.getElementById('plan-feature-audits')) {
-                document.getElementById('plan-feature-audits').textContent = usage.audits_per_month;
-            }
-
-            // Usage Stats (Black Mark)
-            if (document.getElementById('stat-usage-text')) {
-                document.getElementById('stat-usage-text').textContent = usage.audits_used;
-            }
-            if (document.getElementById('stat-usage-limit')) {
-                document.getElementById('stat-usage-limit').textContent = `/ ${usage.audits_per_month}`;
-            }
-
-            if (document.getElementById('stat-usage-bar')) {
-                const percentage = usage.audits_per_month > 0
-                    ? Math.min((usage.audits_used / usage.audits_per_month) * 100, 100)
-                    : 100;
-
-                document.getElementById('stat-usage-bar').style.width = `${percentage}%`;
-                if (percentage > 90) document.getElementById('stat-usage-bar').classList.add('bg-red-500');
-                else document.getElementById('stat-usage-bar').classList.remove('bg-red-500');
-            }
-
-            if (document.getElementById('stat-pages-limit')) {
-                document.getElementById('stat-pages-limit').textContent = usage.pages_per_audit;
-            }
-
-            // Credits (Pink Mark)
-            if (document.getElementById('credits-balance')) {
-                document.getElementById('credits-balance').textContent = usage.credits_remaining;
-            }
-
-            // Button Toggle
-            const upgradeBtn = document.getElementById('upgrade-btn');
-            const billingBtn = document.getElementById('billing-btn');
-
-            if (usage.plan === 'free') { // Changed from planKey to usage.plan
-                if (upgradeBtn) upgradeBtn.style.display = 'inline-flex';
-                if (billingBtn) billingBtn.style.display = 'none';
-            } else {
-                // Paid plan
-                if (upgradeBtn) {
-                    upgradeBtn.textContent = 'Change Plan';
-                    upgradeBtn.style.display = 'inline-flex';
-                }
-                if (billingBtn) billingBtn.style.display = 'inline-flex';
-            }
-
-        } catch (err) {
-            console.error('Failed to load usage stats:', err);
-        }
-    }, 100);
-}
+// loadUsageStats: Removed per user request
 
 // Global helper for billing portal
 window.openBillingPortal = async () => {
