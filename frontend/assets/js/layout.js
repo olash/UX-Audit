@@ -296,7 +296,7 @@ const Layout = {
             // Render Capsule
             container.innerHTML = `
                 <button id="usageBtn" class="flex items-center gap-2 bg-white border border-slate-200 hover:border-slate-300 rounded-full pl-1 pr-3 py-1 transition-all shadow-sm group">
-                    <span class="px-2 py-0.5 rounded-full border text-[10px] font-semibold ${badgeClass}">
+                    <span class="px-2 py-0.5 rounded-full border text-[10px] font-semibold ${badgeClass} hidden sm:block">
                         ${planDisplay}
                     </span>
                     <span class="text-xs font-medium text-slate-600 group-hover:text-slate-900">
