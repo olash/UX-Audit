@@ -31,6 +31,7 @@ router.get("/me", async (req, res) => {
             plan: stats.plan,
             credits: stats.credits,
             usage: stats.audits, // { used, limit }
+            pages: stats.pages, // { limit }
             user_metadata: user.user_metadata,
             created_at: user.created_at
         });

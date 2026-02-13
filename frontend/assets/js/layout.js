@@ -291,17 +291,10 @@ const Layout = {
             // UX Improvement: Show Remaining / Total
             if (topAudits && topLimit) {
                 const remaining = Math.max(0, limit - used);
+                console.log(`[Usage] Limit: ${limit}, Used: ${used}, Remaining: ${remaining}`);
                 topAudits.textContent = remaining;
                 topLimit.textContent = limit;
-
-                // Optional: Update parent text to "Audits Left" if possible, 
-                // but strictly following user request: "{remaining}/{total} Audits"
-                // The HTML structure is <span id="audits"></span>/<span id="limit"></span> Audits
-                // So it will read: "68/75 Audits" (which is ambiguous but what was asked in one example).
-                // Wait, user asked: "[ TEAM PLAN ] | 68 / 75 Audits Left | 1000 Credits"
-                // Let's try to append "Left" to the parent if not already there, 
-                // or just rely on the user understanding "68/75" in context of "Left".
-                // I'll stick to the numbers as requested in the React snippet: "{usage.remainingAudits}/{usage.totalAudits} Audits"
+                // e.g. "2/2 Audits Left" or "0/2 Audits Left"
             }
 
             if (topCredits) topCredits.textContent = credits;

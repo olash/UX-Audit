@@ -272,8 +272,8 @@ async function loadUsageStats() {
             }
 
             // Usage
-            const used = data.audits.used || 0;
-            const limit = data.audits.limit || currentPlan.auditLimit;
+            const used = data.usage?.used || 0;
+            const limit = data.usage?.limit || currentPlan.auditLimit;
             const percentage = Math.min((used / limit) * 100, 100);
 
             if (document.getElementById('stat-usage-text')) {
