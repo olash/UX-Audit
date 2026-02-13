@@ -310,7 +310,7 @@ const Layout = {
                 </button>
 
                 <!-- Dropdown -->
-                <div id="usageDropdown" class="hidden absolute top-full right-0 mt-2 w-64 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-4 transform origin-top-right transition-all">
+                <div id="usageDropdown" class="hidden fixed left-4 right-4 top-[70px] w-auto sm:absolute sm:top-full sm:right-0 sm:left-auto sm:w-64 sm:mt-2 bg-white border border-slate-200 rounded-xl shadow-xl z-50 p-4 transform origin-top sm:origin-top-right transition-all">
                     <div class="flex justify-between items-center mb-3">
                         <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Current Plan</span>
                         <span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeClass}">${planDisplay}</span>
