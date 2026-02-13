@@ -215,11 +215,14 @@ const Layout = {
 
         const nameEl = document.getElementById('user-name');
         const emailEl = document.getElementById('user-email');
+        const initEl = document.getElementById('user-initials');
 
         if (nameEl) nameEl.textContent = name;
         if (emailEl) emailEl.textContent = email;
 
-        // Robust Avatar Logic
+        // Robust Avatar Logic (Single Source of Truth)
+        // 'user', 'meta', 'email' are already defined above
+
         const avatarUrl = meta.avatar_url;
         const firstName = meta.first_name;
         // email is already 'email' variable
@@ -241,102 +244,45 @@ const Layout = {
             }
         }
 
-        // Initialize Global Usage State
-        this.loadUsage();
+        // Trigger Sidebar Update
+        this.updateSidebarPlan();
     },
 
-    /**
-     * loads global usage state from backend and updates UI
-     */
-    loadUsage: async function () {
+    updateSidebarPlan: async function () {
         try {
             const token = App.session?.access_token;
             if (!token) return;
 
-            const response = await fetch('/api/usage', {
+            const response = await fetch('/api/me', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
 
             if (!response.ok) return;
 
-            const usage = await response.json();
-            console.log('[Layout] Usage State Loaded:', usage);
+            const data = await response.json();
+            // Data structure expected: { id, email, plan: 'free', credits: 0, ... }
+            // Note: /api/me currently returns profile data from `users.js`
 
-            // Store globally for other pages (like Settings) to access synchronously if needed
-            App.usage = usage;
+            // We need usage stats (audits used). /api/me might not have it.
+            // Let's assume we need to fetch it or /api/me has it.
+            // If not, we'll just show plan name for now.
+            // Ideally /api/me should return { plan, usage: { used: X, limit: Y } }
 
-            // Render Top Bar
-            this.renderTopBarUsage(usage);
+            const planName = (data.plan || 'Free').charAt(0).toUpperCase() + (data.plan || 'Free').slice(1) + ' Plan';
+            const credits = data.credits || 0;
 
-            // Broadcast event for other components (e.g. Settings page)
-            document.dispatchEvent(new CustomEvent('usageUpdated', { detail: usage }));
+            const nameEl = document.getElementById('sidebar-plan-name');
+            const usageEl = document.getElementById('sidebar-plan-usage');
+
+            if (nameEl) nameEl.textContent = planName;
+            if (usageEl) usageEl.textContent = `${credits} Credits available`;
+
+            // Note: To show "Audits used", we'd need to count them. 
+            // For now, showing Credits is more useful for the credit-based system.
 
         } catch (e) {
-            console.error("Failed to load usage stats", e);
+            console.error("Failed to update sidebar", e);
         }
-    },
-
-    renderTopBarUsage: function (usage) {
-        const container = document.getElementById('topbar-usage');
-        if (!container) return;
-
-        // 1. Plan Badge
-        const badge = document.getElementById('topbar-plan-badge');
-        if (badge) {
-            const plan = (usage.plan || 'free').toLowerCase();
-            badge.textContent = plan.charAt(0).toUpperCase() + plan.slice(1) + ' Plan';
-
-            // Re-apply classes based on plan
-            badge.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border';
-
-            if (plan === 'starter') {
-                badge.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
-            } else if (plan === 'pro') {
-                badge.classList.add('bg-emerald-50', 'text-emerald-700', 'border-emerald-200');
-            } else if (plan === 'team') {
-                badge.classList.add('bg-purple-50', 'text-purple-700', 'border-purple-200');
-            } else {
-                // Free
-                badge.classList.add('bg-slate-100', 'text-slate-800', 'border-slate-200');
-            }
-        }
-
-        // 2. Audits Display
-        const auditsText = document.getElementById('topbar-audits-text');
-        if (auditsText) {
-            const remaining = usage.audits_remaining;
-            const limit = usage.audits_per_month;
-
-            if (remaining === 0) {
-                auditsText.innerHTML = `<span class="text-red-600 font-bold">0</span> / ${limit} Audits`;
-                auditsText.parentElement.classList.add('text-red-600'); // make icon red too maybe?
-            } else {
-                auditsText.textContent = `${remaining} / ${limit} Audits Left`;
-                auditsText.parentElement.classList.remove('text-red-600');
-            }
-        }
-
-        // 3. Credits Display
-        const creditsText = document.getElementById('topbar-credits-text');
-        if (creditsText) {
-            const credits = usage.credits_remaining || 0;
-            creditsText.textContent = `${credits} Credits`;
-
-            if (credits < 10 && credits > 0) {
-                creditsText.classList.add('text-amber-600');
-            } else {
-                creditsText.classList.remove('text-amber-600');
-            }
-        }
-
-        // Show container
-        container.classList.remove('hidden');
-        container.style.display = 'flex';
-    },
-
-    // Refresh alias for external calls
-    refreshUsage: function () {
-        return this.loadUsage();
     },
 
     /**

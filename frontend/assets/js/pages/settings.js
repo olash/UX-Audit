@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 4. Initialize Features
     await loadProfile();
-    // await loadUsageStats(); // Removed
+    await loadUsageStats();
 });
 
 async function loadProfile() {
@@ -176,6 +176,8 @@ function setupAvatarHandler() {
     avatarUpload.addEventListener('change', async (e) => {
         const file = e.target.files[0];
 
+        console.log(file, file?.type, file?.size);
+
         if (!file) return;
 
         if (file.size === 0 || !file.type.startsWith('image/')) {
@@ -184,22 +186,26 @@ function setupAvatarHandler() {
         }
 
         const { data: { user } } = await supabase.auth.getUser();
-        const filePath = `${user.id}.png`;
+        const filePath = `${user.id}.png`; // Keep simple for now
 
         try {
-            const { error } = await supabase.storage
+            const { data, error } = await supabase.storage
                 .from('avatars')
                 .upload(filePath, file, {
                     upsert: true,
                     contentType: file.type
                 });
 
-            if (error) throw error;
+            if (error) {
+                console.error('Upload Error:', error);
+                throw error;
+            }
 
             const { data: publicData } = supabase.storage
                 .from('avatars')
                 .getPublicUrl(filePath);
 
+            // Add timestamp to bust cache
             const publicUrl = `${publicData.publicUrl}?t=${new Date().getTime()}`;
 
             const { error: updateError } = await supabase.auth.updateUser({
@@ -208,7 +214,10 @@ function setupAvatarHandler() {
                 }
             });
 
-            if (updateError) throw updateError;
+            if (updateError) {
+                console.error('Update User Error:', updateError);
+                throw updateError;
+            }
 
             document.getElementById('avatar').src = publicUrl;
             App.toast('success', 'Avatar updated');
@@ -226,201 +235,82 @@ function setupAvatarHandler() {
     });
 }
 
-// --- SUBSCRIPTION & BILLING LOGIC ---
+async function loadUsageStats() {
+    if (!App.user) return;
 
-// Listen for global usage updates (from Layout.loadUsage)
-document.addEventListener('usageUpdated', (e) => {
-    renderSubscriptionSection(e.detail);
-    renderPlanComparison(e.detail); // Re-render to update "Current Plan" button states
-});
+    // We wait a tick for DOM just in case, though usually fine here
+    setTimeout(async () => {
+        try {
+            const usage = await App.getUsage(); // User endpoint
+            const res = await App.audits.getAll();
+            const audits = Array.isArray(res) ? res : (res.audits || []);
+            const count = audits.length;
+            // Plan Limits (aligned with config/pricing.js)
+            const planKey = usage.plan || 'free';
+            // Use imported PLANS or fallback
+            // Note: We need to import PLANS at the top of the file
+            const currentPlan = PLANS[planKey] || PLANS.free;
 
-function initSubscriptionTabs() {
-    const tabOverview = document.getElementById('tab-overview');
-    const tabPlans = document.getElementById('tab-plans');
-    const viewOverview = document.getElementById('view-overview');
-    const viewPlans = document.getElementById('view-plans');
+            // Update UI
+            if (document.getElementById('plan-name')) {
+                document.getElementById('plan-name').textContent = currentPlan.name;
+                document.getElementById('plan-badge').textContent = 'Active';
+                document.getElementById('plan-description').textContent =
+                    planKey === 'free' ? 'You are currently on the free tier. Upgrade to unlock more power.'
+                        : `You are on the ${currentPlan.name} plan. Thank you for your support!`;
 
-    if (!tabOverview || !tabPlans) return;
+                // Dynamic Feature List
+                if (document.getElementById('plan-feature-audits')) {
+                    document.getElementById('plan-feature-audits').textContent = currentPlan.auditLimit;
+                }
+            }
 
-    tabOverview.addEventListener('click', () => {
-        tabOverview.classList.add('bg-white', 'shadow-sm', 'text-slate-900');
-        tabOverview.classList.remove('text-slate-500');
-        tabPlans.classList.remove('bg-white', 'shadow-sm', 'text-slate-900');
-        tabPlans.classList.add('text-slate-500');
+            // Usage
+            const monthlyLimit = currentPlan.auditLimit;
+            const percentage = Math.min((usage.thisMonthCount / monthlyLimit) * 100, 100);
 
-        viewOverview.classList.remove('hidden');
-        viewPlans.classList.add('hidden');
-    });
+            if (document.getElementById('stat-usage-text')) {
+                document.getElementById('stat-usage-text').textContent = usage.thisMonthCount;
+                document.getElementById('stat-usage-limit').textContent = `/ ${monthlyLimit}`;
+            }
+            if (document.getElementById('stat-usage-bar')) {
+                document.getElementById('stat-usage-bar').style.width = `${percentage}%`;
+                // Color change if near limit?
+                if (percentage > 90) document.getElementById('stat-usage-bar').classList.add('bg-red-500');
+            }
 
-    tabPlans.addEventListener('click', () => {
-        tabPlans.classList.add('bg-white', 'shadow-sm', 'text-slate-900');
-        tabPlans.classList.remove('text-slate-500');
-        tabOverview.classList.remove('bg-white', 'shadow-sm', 'text-slate-900');
-        tabOverview.classList.add('text-slate-500');
+            if (document.getElementById('stat-pages-limit')) {
+                document.getElementById('stat-pages-limit').textContent = currentPlan.pageLimit;
+            }
 
-        viewOverview.classList.add('hidden');
-        viewPlans.classList.remove('hidden');
-    });
+            // Credits
+            if (document.getElementById('credits-balance')) {
+                const credits = usage.credits || 0; // Usage API should return credits
+                // If usage doesn't have credits, we might need profile fetch. 
+                // App.getUsage() usually wraps /usage endpoint. 
+                // If /usage doesn't return credits, let's use profile fallback
+                const profile = await App.getProfile();
+                document.getElementById('credits-balance').textContent = profile.credits || 0;
+            }
 
-    // Helper to jump to plans
-    window.showPlansTab = () => tabPlans.click();
-}
+            // Button Toggle
+            const upgradeBtn = document.getElementById('upgrade-btn');
+            const billingBtn = document.getElementById('billing-btn');
 
-/**
- * Renders the Overview Tab (Current Plan + Usage)
- */
-function renderSubscriptionSection(usage) {
-    if (!usage) return;
+            if (planKey === 'free') {
+                if (upgradeBtn) upgradeBtn.style.display = 'inline-flex';
+                if (billingBtn) billingBtn.style.display = 'none';
+            } else {
+                // Paid plan
+                if (upgradeBtn) upgradeBtn.textContent = 'Change Plan';
+                if (billingBtn) billingBtn.style.display = 'inline-flex';
+            }
 
-    // 1. Current Plan Card
-    const planNameEl = document.getElementById('settings-plan-name');
-    const planDescEl = document.getElementById('settings-plan-desc');
-    const iconContainer = document.getElementById('plan-icon-container');
-
-    if (planNameEl) {
-        const planKey = (usage.plan || 'free').toLowerCase();
-        planNameEl.textContent = planKey.charAt(0).toUpperCase() + planKey.slice(1) + ' Plan';
-
-        // Icon Styling
-        if (iconContainer) {
-            iconContainer.className = 'w-12 h-12 rounded-full flex items-center justify-center ';
-            if (planKey === 'starter') iconContainer.classList.add('bg-blue-100', 'text-blue-600');
-            else if (planKey === 'pro') iconContainer.classList.add('bg-emerald-100', 'text-emerald-600');
-            else if (planKey === 'team') iconContainer.classList.add('bg-purple-100', 'text-purple-600');
-            else iconContainer.classList.add('bg-slate-100', 'text-slate-500');
+        } catch (err) {
+            console.error('Failed to load usage stats:', err);
         }
-
-        if (planDescEl) {
-            planDescEl.textContent = `You are currently on the ${planKey} plan.`;
-        }
-    }
-
-    // 2. Usage Grid
-    const usedEl = document.getElementById('usage-audits-used');
-    const limitEl = document.getElementById('usage-audits-limit');
-    const barEl = document.getElementById('usage-audits-bar');
-    const remainEl = document.getElementById('usage-audits-remaining');
-    const warningEl = document.getElementById('usage-warning');
-    const creditsEl = document.getElementById('usage-credits');
-
-    if (usedEl) usedEl.textContent = usage.audits_used;
-    if (limitEl) limitEl.textContent = usage.audits_per_month;
-
-    if (barEl) {
-        const pct = usage.audits_per_month > 0
-            ? Math.min((usage.audits_used / usage.audits_per_month) * 100, 100)
-            : 100;
-        barEl.style.width = `${pct}%`;
-
-        if (usage.audits_remaining === 0) {
-            barEl.classList.add('bg-red-500');
-            barEl.classList.remove('bg-slate-800');
-            if (warningEl) warningEl.classList.remove('hidden');
-        } else {
-            barEl.classList.remove('bg-red-500');
-            barEl.classList.add('bg-slate-800');
-            if (warningEl) warningEl.classList.add('hidden');
-        }
-    }
-
-    if (remainEl) remainEl.textContent = `${usage.audits_remaining} remaining`;
-    if (creditsEl) creditsEl.textContent = usage.credits_remaining;
+    }, 100);
 }
-
-/**
- * Renders the Plans Comparison Grid
- */
-function renderPlanComparison(currentUsage) {
-    const container = document.getElementById('plans-container');
-    if (!container) return;
-
-    const currentPlanKey = (currentUsage?.plan || 'free').toLowerCase();
-
-    // Map through PLANS config
-    const html = Object.keys(PLANS).map(key => {
-        const plan = PLANS[key];
-        const isCurrent = key === currentPlanKey;
-        const btnState = isCurrent
-            ? `<button disabled class="w-full py-2 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-200 opacity-75 cursor-default">Current Plan</button>`
-            : `<button onclick="App.checkout('${plan.variantId}')" class="w-full py-2 rounded-md text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 transition-colors">Upgrade</button>`;
-
-        return `
-            <div class="border rounded-lg p-5 flex flex-col ${isCurrent ? 'border-emerald-500 ring-1 ring-emerald-500 bg-emerald-50/10' : 'border-slate-200 bg-white'}">
-                <div class="mb-4">
-                    <h4 class="text-sm font-bold text-slate-900 capitalize">${key}</h4>
-                    <div class="flex items-baseline gap-1 mt-1">
-                        <span class="text-2xl font-bold text-slate-900">$${plan.price}</span>
-                        <span class="text-[10px] text-slate-500">/mo</span>
-                    </div>
-                </div>
-                
-                <ul class="space-y-2 mb-6 flex-1">
-                    <li class="flex items-start gap-2 text-xs text-slate-600">
-                        <span class="iconify text-emerald-500 mt-0.5" data-icon="lucide:check" data-width="12"></span>
-                        ${plan.auditLimit} Audits / mo
-                    </li>
-                     <li class="flex items-start gap-2 text-xs text-slate-600">
-                        <span class="iconify text-emerald-500 mt-0.5" data-icon="lucide:check" data-width="12"></span>
-                        Max ${plan.pageLimit} Pages / scan
-                    </li>
-                </ul>
-
-                ${btnState}
-            </div>
-        `;
-    }).join('');
-
-    container.innerHTML = html;
-    if (window.Iconify) window.Iconify.scan(container);
-}
-
-/**
- * Renders Credit Packs
- */
-function renderCreditPacks() {
-    const container = document.getElementById('credits-container');
-    if (!container) return;
-
-    const packs = [
-        { credits: 50, price: 15, id: CREDIT_PACKS.credits_50 },
-        { credits: 200, price: 50, id: CREDIT_PACKS.credits_200 },
-        { credits: 500, price: 100, id: CREDIT_PACKS.credits_500 }
-    ];
-
-    const html = packs.map(pack => `
-        <div class="border border-slate-200 rounded-lg p-4 bg-white hover:border-indigo-300 transition-colors">
-            <div class="flex justify-between items-start mb-2">
-                <div>
-                    <span class="block text-lg font-bold text-slate-900">${pack.credits} Credits</span>
-                    <span class="text-xs text-slate-500">One-time purchase</span>
-                </div>
-                <div class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-xs font-bold">$${pack.price}</div>
-            </div>
-            <button onclick="App.checkout('${pack.id}')" class="w-full mt-2 py-2 rounded border border-indigo-600 text-indigo-600 hover:bg-indigo-50 text-xs font-medium transition-colors">
-                Buy Credits
-            </button>
-        </div>
-    `).join('');
-
-    container.innerHTML = html;
-}
-
-// Initial Call when settings.html loads
-setTimeout(() => {
-    initSubscriptionTabs();
-
-    // If usage is already loaded in Layout
-    if (App.usage) {
-        renderSubscriptionSection(App.usage);
-        renderPlanComparison(App.usage);
-    } else {
-        // Fallback or wait for event
-        renderPlanComparison(); // Render generic plan cards at least
-    }
-
-    renderCreditPacks(); // Static config
-}, 100);
-// loadUsageStats: Removed per user request
 
 // Global helper for billing portal
 window.openBillingPortal = async () => {

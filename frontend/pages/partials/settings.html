@@ -88,111 +88,108 @@
             </div>
         </div>
 
-        <!-- Section: Subscription & Billing -->
-        <div class="mb-8" id="subscription-section">
+        <!-- Section: Plan & Billing -->
+        <div>
             <div class="mb-4 flex items-center justify-between">
                 <div>
                     <h2 class="text-base font-medium text-slate-900 tracking-tight">Subscription</h2>
-                    <p class="text-xs text-slate-500 mt-0.5">Manage your plan, limits, and billing.</p>
-                </div>
-                <!-- Optional: Tabs if we want a strict tabbed interface, but user asked for "Billing & Plans Sub Tab" which implies a toggle or section -->
-                <div class="flex bg-slate-100 p-0.5 rounded-lg">
-                    <button
-                        class="px-3 py-1.5 text-xs font-medium rounded-md bg-white shadow-sm text-slate-900 transition-all"
-                        id="tab-overview">Overview</button>
-                    <button
-                        class="px-3 py-1.5 text-xs font-medium rounded-md text-slate-500 hover:text-slate-900 transition-all"
-                        id="tab-plans">Billing & Plans</button>
+                    <p class="text-xs text-slate-500 mt-0.5">Manage your team's plan and billing information.
+                    </p>
                 </div>
             </div>
 
-            <!-- TAB 1: OVERVIEW (Current Plan & Usage) -->
-            <div id="view-overview" class="space-y-6">
-                <!-- Current Plan Card -->
-                <div class="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-                    <div class="p-6">
-                        <div class="flex items-center justify-between mb-6">
-                            <div class="flex items-center gap-4">
-                                <div id="plan-icon-container"
-                                    class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-                                    <span class="iconify" data-icon="lucide:box" data-width="24"></span>
-                                </div>
-                                <div>
-                                    <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                        <span id="settings-plan-name">Free Plan</span>
-                                        <span
-                                            class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-100">ACTIVE</span>
-                                    </h3>
-                                    <p class="text-xs text-slate-500 mt-0.5" id="settings-plan-desc">You are currently
-                                        on the Free plan.</p>
+            <div class="bg-white border border-slate-200 rounded-lg shadow-xs overflow-hidden">
+                <div class="p-6">
+                    <div>
+                        <div class="flex items-center gap-3 mb-4">
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
+                                    Current Plan</p>
+                                <div class="flex items-center gap-3">
+                                    <h3 class="text-xl font-semibold text-slate-900" id="plan-name">Free</h3>
+                                    <span id="plan-badge"
+                                        class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                        Active
+                                    </span>
                                 </div>
                             </div>
-                            <button onclick="document.getElementById('tab-plans').click()"
-                                class="text-xs font-medium text-indigo-600 hover:text-indigo-700 hover:underline">
-                                Change Plan
-                            </button>
                         </div>
 
-                        <!-- Usage Grid -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Audits Usage -->
-                            <div class="bg-slate-50 rounded-lg p-4 border border-slate-100">
-                                <div class="flex justify-between items-end mb-2">
-                                    <p class="text-xs font-semibold text-slate-700">Audits This Month</p>
-                                    <p class="text-xs font-medium text-slate-500">
-                                        <span id="usage-audits-used" class="text-slate-900 font-bold">0</span> / <span
-                                            id="usage-audits-limit">0</span>
-                                    </p>
+                        <p class="text-xs text-slate-500 max-w-sm mb-6" id="plan-description">
+                            You are currently on the free tier. Upgrade to unlock more power.
+                        </p>
+
+                        <!-- Usage Stats Grid -->
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="bg-slate-50 p-3 rounded border border-slate-100">
+                                <p class="text-[10px] text-slate-500 font-medium mb-1">Audits / Month</p>
+                                <div class="flex items-end gap-1">
+                                    <span id="stat-usage-text" class="text-lg font-bold text-slate-900">--</span>
+                                    <span class="text-xs text-slate-400 mb-0.5" id="stat-usage-limit">/ --</span>
                                 </div>
-                                <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-2">
-                                    <div id="usage-audits-bar"
-                                        class="h-full bg-slate-800 w-[0%] transition-all duration-500"></div>
-                                </div>
-                                <div class="flex justify-between items-center text-[10px]">
-                                    <span class="text-slate-500" id="usage-audits-remaining">0 remaining</span>
-                                    <span class="text-amber-600 font-medium hidden" id="usage-warning">Limit
-                                        Reached</span>
+                                <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mt-2">
+                                    <div id="stat-usage-bar"
+                                        class="h-full bg-slate-900 w-[0%] rounded-full transition-all duration-1000">
+                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Credits Balance -->
-                            <div
-                                class="bg-indigo-50/50 rounded-lg p-4 border border-indigo-100/50 flex flex-col justify-center relative overflow-hidden">
-                                <span class="iconify absolute -right-2 -bottom-2 text-indigo-100/50"
-                                    data-icon="lucide:coins" data-width="64"></span>
-                                <p class="text-xs font-semibold text-indigo-900 mb-1">Available Credits</p>
-                                <div class="flex items-baseline gap-1">
-                                    <span class="text-2xl font-bold text-indigo-600" id="usage-credits">0</span>
-                                    <span class="text-xs text-indigo-400">credits</span>
+                            <div class="bg-slate-50 p-3 rounded border border-slate-100">
+                                <p class="text-[10px] text-slate-500 font-medium mb-1">Pages per Audit</p>
+                                <div class="flex items-end gap-1">
+                                    <span id="stat-pages-limit" class="text-lg font-bold text-slate-900">3</span>
+                                    <span class="text-xs text-slate-400 mb-0.5">pages</span>
                                 </div>
-                                <p class="text-[10px] text-indigo-400 mt-1">Used automatically when limits are reached.
-                                </p>
+                                <p class="text-[10px] text-slate-400 mt-2">Max pages per scan</p>
                             </div>
                         </div>
+
+                        <!-- Credits Row -->
+                        <div
+                            class="flex items-center justify-between text-xs bg-white p-3 rounded border border-slate-200 shadow-sm mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="iconify text-slate-400" data-icon="lucide:coins" data-width="14"></span>
+                                <span class="text-slate-600 font-medium">Extra Credits Balance</span>
+                            </div>
+                            <span id="credits-balance" class="text-slate-900 font-bold text-sm">0</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mb-6">Credits never expire and are used when monthly limits
+                            are reached.</p>
+
+                    </div>
+
+                    <div class="flex flex-col gap-3 min-w-[160px]">
+                        <button id="upgrade-btn" onclick="window.location.href='Pricing.html'"
+                            class="w-full inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-4 py-2.5 rounded-md shadow-sm transition-colors">
+                            Upgrade Plan
+                        </button>
+                        <button onclick="window.location.href='Pricing.html#credits'"
+                            class="w-full inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium px-4 py-2.5 rounded-md shadow-sm transition-colors">
+                            Buy Credits
+                        </button>
+                        <button id="billing-btn" onclick="openBillingPortal()" style="display:none"
+                            class="w-full inline-flex items-center justify-center gap-2 text-slate-500 hover:text-slate-900 text-xs font-medium px-4 py-2 transition-colors">
+                            Manage Billing
+                        </button>
                     </div>
                 </div>
             </div>
 
-            <!-- TAB 2: PLANS & BILLING (Upgrade & Credits) -->
-            <div id="view-plans" class="hidden space-y-8">
-                <!-- Data injected via JS -->
-                <div id="plans-container" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <!-- Plans Injected Here -->
+            <!-- Plan Features Grid -->
+            <div class="border-t border-slate-100 bg-slate-50/30 px-6 py-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="flex items-start gap-2">
+                    <span class="iconify text-emerald-500 mt-0.5" data-icon="lucide:check-circle-2"
+                        data-width="14"></span>
+                    <span class="text-xs text-slate-600"><span id="plan-feature-audits">--</span> Audits / mo</span>
                 </div>
-
-                <div>
-                    <h3 class="text-sm font-semibold text-slate-900 mb-4">Top-up Credits</h3>
-                    <div id="credits-container" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <!-- Credit Packs Injected Here -->
-                    </div>
+                <div class="flex items-start gap-2">
+                    <span class="iconify text-emerald-500 mt-0.5" data-icon="lucide:check-circle-2"
+                        data-width="14"></span>
+                    <span class="text-xs text-slate-600">Basic Analytics</span>
                 </div>
-
-                <div class="pt-6 border-t border-slate-200">
-                    <button id="billing-portal-btn" onclick="openBillingPortal()"
-                        class="text-xs text-slate-500 hover:text-slate-900 underline flex items-center gap-1">
-                        Manage Billing Details & Invoices
-                        <span class="iconify" data-icon="lucide:external-link" data-width="10"></span>
-                    </button>
+                <div class="flex items-start gap-2">
+                    <span class="iconify text-slate-300 mt-0.5" data-icon="lucide:x-circle" data-width="14"></span>
+                    <span class="text-xs text-slate-400">Team Collaboration</span>
                 </div>
             </div>
         </div>

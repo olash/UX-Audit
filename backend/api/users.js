@@ -1,6 +1,6 @@
 import express from "express";
 import { supabase } from "../db/supabase.js";
-import { checkUsage, getUsageStats } from "../utils/usage.js";
+import { checkUsage } from "../utils/usage.js";
 
 const router = express.Router();
 
@@ -22,20 +22,18 @@ router.get("/me", async (req, res) => {
         const user = await getUserFromRequest(req);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-        // Fetch usage stats which covers plan, credits, and limits
-        const stats = await getUsageStats(user.id);
+        // Fetch Profile for additional fields
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('plan, credits')
+            .eq('id', user.id)
+            .single();
 
         res.json({
             id: user.id,
             email: user.email,
-            plan: stats.plan,
-            credits: stats.credits_remaining,
-            usage: {
-                used: stats.audits_used,
-                limit: stats.audits_per_month,
-                remaining: stats.audits_remaining
-            },
-            pages: { limit: stats.pages_per_audit },
+            plan: profile?.plan || 'free',
+            credits: profile?.credits || 0,
             user_metadata: user.user_metadata,
             created_at: user.created_at
         });
@@ -51,8 +49,8 @@ router.get("/usage", async (req, res) => {
         const user = await getUserFromRequest(req);
         if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-        const stats = await getUsageStats(user.id);
-        res.json(stats);
+        const usage = await checkUsage(user.id);
+        res.json(usage);
     } catch (error) {
         console.error("Error fetching usage:", error);
         res.status(500).json({ error: "Failed to fetch usage" });

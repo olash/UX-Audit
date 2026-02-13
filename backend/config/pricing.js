@@ -2,20 +2,20 @@ export const PLANS = {
     free: {
         name: 'Free',
         pages: 3,
-        audits: 2,
+        audits: 2, // explicit limit
         price: 0,
         priceId: process.env.STRIPE_PRICE_FREE || null
     },
     starter: {
         name: 'Starter',
-        pages: 15, // Aligned with entitlements
-        audits: 8, // Aligned with entitlements
+        pages: 10,
+        audits: 10,
         price: 12,
         priceId: '1292487'
     },
     pro: {
         name: 'Pro',
-        pages: 40, // Aligned with entitlements
+        pages: 30,
         audits: 30,
         price: 39,
         priceId: '1284104'

@@ -1,28 +1,14 @@
-import { PostHog } from 'posthog-node';
-import dotenv from 'dotenv';
-dotenv.config();
+import { PostHog } from 'posthog-node'
 
-let posthogClient = null;
+let client = null;
 
-if (process.env.POSTHOG_KEY) {
-    posthogClient = new PostHog(
-        process.env.POSTHOG_KEY,
+if (process.env.POSTHOG_SERVER_KEY) {
+    client = new PostHog(
+        process.env.POSTHOG_SERVER_KEY,
         { host: process.env.POSTHOG_HOST || 'https://app.posthog.com' }
-    );
+    )
 } else {
-    console.warn("PostHog Key not found in environment variables. Analytics disabled.");
+    console.warn("⚠️ POSTHOG_SERVER_KEY not set. Analytics disabled.");
 }
 
-export const posthog = {
-    capture: (event) => {
-        if (posthogClient) {
-            posthogClient.capture(event);
-        }
-    },
-    shutdown: async () => {
-        if (posthogClient) {
-            await posthogClient.shutdown();
-        }
-    },
-    client: posthogClient
-};
+export const posthog = client;

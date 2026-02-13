@@ -1,5 +1,4 @@
 import { PLANS } from '../config/pricing.js';
-import posthog from '../lib/posthog.js';
 
 document.addEventListener('DOMContentLoaded', async () => {
     // 1. Initialize App & Auth
@@ -84,6 +83,13 @@ async function startAudit() {
         // Loading State
         btn.disabled = true;
         btn.innerHTML = '<span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="14"></span> Starting...';
+
+        // Track Initiated
+        if (window.posthog) {
+            posthog.capture('audit_initiated', {
+                url: url
+            });
+        }
 
         // Call API
         const res = await App.audits.create(url);

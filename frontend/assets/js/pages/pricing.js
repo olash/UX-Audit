@@ -1,5 +1,4 @@
 import { PLANS, CREDIT_PACKS } from '../config/pricing.js';
-import posthog from '../lib/posthog.js';
 // Note: App and Layout are global or imported via main module pattern usually, but here we assume ES modules.
 // We need to access App.user to decide button state.
 
@@ -116,14 +115,8 @@ function renderCredits() {
 }
 
 // Global actions
-// Global actions
 window.purchaseSubscription = async (planKey) => {
     try {
-        posthog.capture('upgrade_clicked', {
-            from_plan: App.user?.user_metadata?.plan || 'free',
-            to_plan: planKey
-        });
-
         const plan = PLANS[planKey];
         if (!plan || !plan.variantId) {
             App.toast('error', 'Plan not available for purchase');
@@ -139,10 +132,6 @@ window.purchaseSubscription = async (planKey) => {
 
 window.purchaseCredits = async (amount) => {
     try {
-        posthog.capture('credits_purchase_clicked', {
-            amount: amount
-        });
-
         const pack = CREDIT_PACKS.find(p => p.credits === amount);
         if (!pack || !pack.variantId) {
             App.toast('error', 'Pack not available');

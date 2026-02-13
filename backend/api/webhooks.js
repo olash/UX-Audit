@@ -95,14 +95,18 @@ router.post('/', verifySignature, async (req, res) => {
                 else {
                     console.log(`✅ User ${userId} updated to plan ${planName}`);
 
-                    posthog.capture({
-                        distinctId: userId,
-                        event: 'subscription_upgraded',
-                        properties: {
-                            plan: planName,
-                            lemon_subscription_id: data.id
-                        }
-                    });
+                    // Track in PostHog
+                    if (posthog) {
+                        posthog.capture({
+                            distinctId: userId,
+                            event: 'subscription_updated', // or 'subscription_created' based on eventName if needed, but 'updated' covers change
+                            properties: {
+                                plan: planName,
+                                status: attributes.status,
+                                amount: attributes.total_formatted
+                            }
+                        });
+                    }
                 }
             } else {
                 console.warn(`⚠️ Unknown plan variant: ${variantId}`);
@@ -160,14 +164,17 @@ router.post('/', verifySignature, async (req, res) => {
 
                 console.log(`💰 User ${userId} purchased ${credits} credits`);
 
-                posthog.capture({
-                    distinctId: userId,
-                    event: 'credits_purchased',
-                    properties: {
-                        amount: credits,
-                        variant_id: variantId
-                    }
-                });
+                // Track in PostHog
+                if (posthog) {
+                    posthog.capture({
+                        distinctId: userId,
+                        event: 'credits_purchased',
+                        properties: {
+                            amount: credits,
+                            price: attributes.total_formatted
+                        }
+                    });
+                }
             }
         }
 

@@ -2,10 +2,10 @@ import express from "express";
 import { createProject } from "../db/createProject.js";
 import { runScraper } from "../scraper/scraper.js";
 import { supabase } from "../db/supabase.js";
+import { posthog } from '../utils/posthog.js';
 import { generateReport } from "../reports/generateReport.js";
 import { checkUsage } from "../utils/usage.js";
 import { PLAN_ENTITLEMENTS } from "../config/pricing.js";
-import { posthog } from "../utils/posthog.js";
 
 const router = express.Router();
 
@@ -205,17 +205,23 @@ router.post("/", auditLimiter, async (req, res) => {
             }
         }
 
-        // PostHog Tracking
-        posthog.capture({
-            distinctId: user.id,
-            event: 'audit_started',
-            properties: {
-                project_id: project.id,
-                plan: planName,
-                usage_type: usageType,
-                url: url
+        // Track in PostHog
+        try {
+            if (posthog) {
+                posthog.capture({
+                    distinctId: user.id,
+                    event: 'audit_started',
+                    properties: {
+                        plan: planName,
+                        payment_source: usageType,
+                        url: url,
+                        credits_balance: profile.credits || 0
+                    }
+                });
             }
-        });
+        } catch (phError) {
+            console.error('PostHog Error:', phError);
+        }
 
         // 2. Start (async) scrape
         (async () => {

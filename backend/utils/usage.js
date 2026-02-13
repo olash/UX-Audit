@@ -1,18 +1,28 @@
 import { supabase } from "../db/supabase.js";
+
 import { PLAN_ENTITLEMENTS } from "../config/pricing.js";
 
-export async function getUsageStats(userId) {
-    // 1. Get User Plan & Credits
+export async function checkUsage(userId) {
+    // 1. Get User Plan
+    let planName = 'free';
+
     const { data: profile } = await supabase
         .from('profiles')
         .select('plan, credits')
         .eq('id', userId)
         .single();
 
-    const planName = (profile?.plan || 'free').toLowerCase();
-    const credits = profile?.credits || 0;
+    if (profile && profile.plan) {
+        planName = profile.plan.toLowerCase();
+    }
 
     const entitlements = PLAN_ENTITLEMENTS[planName] || PLAN_ENTITLEMENTS.free;
+    const limits = {
+        audits: entitlements.auditsPerMonth,
+        pages: entitlements.maxPagesPerAudit
+    };
+
+    console.log(`[Usage Check] User: ${userId} | Plan: ${planName} | Credits: ${profile?.credits} | Limits: ${JSON.stringify(limits)}`);
 
     // 2. Count Audits this month
     const now = new Date();
@@ -26,45 +36,21 @@ export async function getUsageStats(userId) {
 
     if (error) {
         console.error("Usage check error:", error);
+        // Fail open or closed? Closed for safety.
         throw new Error("Could not verify usage limits");
     }
 
-    const auditsUsed = count || 0;
-    const auditsRemaining = Math.max(entitlements.auditsPerMonth - auditsUsed, 0);
-
-    // Strict JSON structure as requested
-    return {
-        plan: planName,
-        audits_per_month: entitlements.auditsPerMonth,
-        audits_used: auditsUsed,
-        audits_remaining: auditsRemaining,
-        credits_remaining: credits,
-        pages_per_audit: entitlements.maxPagesPerAudit
-    };
-}
-
-export async function checkUsage(userId) {
-    try {
-        const stats = await getUsageStats(userId);
-
-        console.log(`[Usage Check] User: ${userId} | Plan: ${stats.plan} | Credits: ${stats.credits_remaining} | Used: ${stats.audits_used}/${stats.audits_per_month}`);
-
-        if (stats.audits_used >= stats.audits_per_month) {
-            return {
-                allowed: false,
-                reason: `Monthly audit limit reached (${stats.audits_used}/${stats.audits_per_month}). Upgrade your plan or use credits.`
-            };
-        }
-
+    if (count >= limits.audits) {
         return {
-            allowed: true,
-            pageLimit: stats.pages_per_audit,
-            plan: stats.plan,
-            credits: stats.credits_remaining,
-            // Pass full stats for advanced logic if needed
-            stats: stats
+            allowed: false,
+            reason: `Monthly audit limit reached (${count}/${limits.audits}). Upgrade your plan to continue.`
         };
-    } catch (e) {
-        return { allowed: false, reason: "Error checking usage: " + e.message };
     }
+
+    return {
+        allowed: true,
+        pageLimit: limits.pages,
+        plan: planName,
+        credits: profile?.credits || 0 // Usage logic can now use this
+    };
 }

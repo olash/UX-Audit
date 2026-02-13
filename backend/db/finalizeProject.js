@@ -2,7 +2,7 @@ import { supabase } from "./supabase.js";
 import { DIMENSIONS } from "../ai/scoring.config.js";
 import { generateReport } from "../reports/generateReport.js";
 import { PLAN_ENTITLEMENTS } from "../config/pricing.js";
-import { posthog } from "../utils/posthog.js";
+import { posthog } from '../utils/posthog.js';
 
 /**
  * Aggregates scores from all pages and finalizes the project.
@@ -109,8 +109,6 @@ export async function finalizeProject(projectId) {
         if (updateError) throw updateError;
         console.log("✅ Project successfully finalized.");
 
-
-
         // 4. Trigger Async PDF Generation (CONDITIONAL)
         // Check if user is entitled to PDF generation to save compute
         const { data: projectUser } = await supabase
@@ -120,18 +118,25 @@ export async function finalizeProject(projectId) {
             .single();
 
         if (projectUser) {
-            // PostHog: Audit Completed
-            posthog.capture({
-                distinctId: projectUser.user_id,
-                event: 'audit_completed',
-                properties: {
-                    project_id: projectId,
-                    score: finalOverall,
-                    pages_scanned: count,
-                    usage_type: projectUser.payment_source || 'unknown',
-                    // Fetch plan name if needed, or rely on profile fetch below
-                }
-            });
+            // Track Audit Completed
+            if (posthog) {
+                // Determine usage type for properties
+                const usageType = projectUser.payment_source ||
+                    projectUser.metadata?.usage_type ||
+                    (projectUser.progress_label?.includes('[credits]') ? 'credits' : 'monthly');
+
+                posthog.capture({
+                    distinctId: projectUser.user_id,
+                    event: 'audit_completed',
+                    properties: {
+                        score: finalOverall,
+                        pages_scanned: isNaN(count) ? 0 : count,
+                        url: projectUser.target_url,
+                        payment_source: usageType
+                    }
+                });
+            }
+
             // --- CREDIT DEDUCTION LOGIC ---
             // Check if this project was flagged to use credits
             // Enterprise Polish: Check payment_source column first
@@ -150,16 +155,6 @@ export async function finalizeProject(projectId) {
                         amount: -pagesDeducted
                     });
 
-                    // PostHog: Credits Deducted
-                    posthog.capture({
-                        distinctId: projectUser.user_id,
-                        event: 'credits_deducted',
-                        properties: {
-                            amount: pagesDeducted,
-                            project_id: projectId
-                        }
-                    });
-
                     if (creditError) {
                         console.error("❌ Failed to deduct credits:", creditError);
                     } else {
@@ -170,6 +165,18 @@ export async function finalizeProject(projectId) {
                             source: 'audit',
                             description: `Audit: ${projectId} (${pagesDeducted} pages)`
                         });
+
+                        // Track Credit Deduction in PostHog
+                        if (posthog) {
+                            posthog.capture({
+                                distinctId: projectUser.user_id,
+                                event: 'credits_deducted',
+                                properties: {
+                                    amount: pagesDeducted,
+                                    audit_id: projectId
+                                }
+                            });
+                        }
                     }
                 }
             }
@@ -215,17 +222,6 @@ export async function finalizeProject(projectId) {
     } catch (err) {
         console.error("❌ Failed to finalize project:", err.message);
         await supabase.from('projects').update({ status: 'error' }).eq('id', projectId);
-
-        // PostHog: Audit Failed
-        posthog.capture({
-            distinctId: 'system', // or try to get user if possible
-            event: 'audit_failed',
-            properties: {
-                project_id: projectId,
-                error: err.message
-            }
-        });
-
         throw err;
     }
 }

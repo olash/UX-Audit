@@ -1,6 +1,6 @@
 // frontend/assets/js/app.js
 import { supabase } from './supabase.js';
-import posthog from './lib/posthog.js';
+import posthog from './posthog.js';
 
 // Create single instance - REMOVED (imported above)
 
@@ -10,39 +10,24 @@ const App = {
     supabase: supabase, // Expose if needed
 
     init: async () => {
-        // Track Pageview
-        posthog.capture('$pageview');
-
         // Check active session
         const { data: { session } } = await supabase.auth.getSession();
         App.user = session?.user || null;
-
         if (App.user) {
-            posthog.identify(App.user.id, {
-                email: App.user.email,
-                plan: App.user.user_metadata?.plan || 'free',
-                // credits: App.user.user_metadata?.credits // If available in metadata
-            });
+            try { posthog.identify(App.user.id, { email: App.user.email }); } catch (e) { }
         }
 
         // Listen for auth changes
         supabase.auth.onAuthStateChange((event, session) => {
             App.user = session?.user || null;
+            if (App.user) {
+                try { posthog.identify(App.user.id, { email: App.user.email }); } catch (e) { }
+            }
             if (event === 'USER_UPDATED' || event === 'SIGNED_IN') {
-                if (App.user) {
-                    posthog.identify(App.user.id, {
-                        email: App.user.email,
-                        plan: App.user.user_metadata?.plan || 'free'
-                    });
-                }
-
                 // Update header if layout is loaded
                 if (window.Layout && window.Layout.updateHeaderUser) {
                     window.Layout.updateHeaderUser();
                 }
-            }
-            if (event === 'SIGNED_OUT') {
-                posthog.reset();
             }
 
             console.log("Auth Event:", event, App.user);
