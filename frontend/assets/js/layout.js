@@ -260,13 +260,18 @@ const Layout = {
             if (!response.ok) return;
 
             const data = await response.json();
-            // Data structure: { plan, credits, usage: { used, limit }, ... }
+            console.log('[Layout] /api/me response:', data);
 
-            const planKey = (data.plan || 'Free');
-            const planName = planKey.toUpperCase() + ' PLAN';
+            // Robust data extraction
+            const planKey = (data.plan || 'freemium').toUpperCase(); // Fallback string
+            const planName = (data.plan || 'Free') + ' Plan';
+
             const credits = data.credits || 0;
-            const used = data.usage?.used || 0;
-            const limit = data.usage?.limit || 0;
+
+            // Handle both new 'usage' and old 'audits' structure
+            const usageObj = data.usage || data.audits || {};
+            const used = usageObj.used || 0;
+            const limit = usageObj.limit || 0;
 
             // Update Sidebar (Legacy/Mobile)
             const sideName = document.getElementById('sidebar-plan-name');
@@ -276,25 +281,26 @@ const Layout = {
             if (sideName) sideName.textContent = planName;
             if (sideUsage) sideUsage.textContent = `${used}/${limit} Audits`;
             if (sideProgress) {
-                const pct = Math.min(100, Math.round((used / limit) * 100));
+                const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 100;
                 sideProgress.style.width = `${pct}%`;
             }
 
-            // Update Top Bar (Desktop) - Styled as Pill
+            // Update Top Bar (Desktop)
             const topPlan = document.getElementById('topbar-plan');
             const topAudits = document.getElementById('topbar-audits');
             const topLimit = document.getElementById('topbar-limit');
             const topCredits = document.getElementById('topbar-credits');
 
-            if (topPlan) topPlan.textContent = planName;
+            if (topPlan) topPlan.textContent = (data.plan || 'Free').charAt(0).toUpperCase() + (data.plan || 'free').slice(1) + ' Plan';
 
-            // UX Improvement: Show Remaining / Total
             if (topAudits && topLimit) {
                 const remaining = Math.max(0, limit - used);
-                console.log(`[Usage] Limit: ${limit}, Used: ${used}, Remaining: ${remaining}`);
                 topAudits.textContent = remaining;
                 topLimit.textContent = limit;
-                // e.g. "2/2 Audits Left" or "0/2 Audits Left"
+
+                // Force visibility update if needed
+                const container = document.getElementById('topbar-usage');
+                if (container) container.classList.remove('hidden');
             }
 
             if (topCredits) topCredits.textContent = credits;

@@ -259,37 +259,49 @@ async function loadUsageStats() {
 
             // Update UI
             if (document.getElementById('plan-name')) {
-                document.getElementById('plan-name').textContent = currentPlan.name;
+                // Capitalize first letter
+                const displayPlan = planKey.charAt(0).toUpperCase() + planKey.slice(1);
+                document.getElementById('plan-name').textContent = displayPlan;
+            }
+            if (document.getElementById('plan-badge')) {
                 document.getElementById('plan-badge').textContent = 'Active';
+            }
+            if (document.getElementById('plan-description')) {
                 document.getElementById('plan-description').textContent =
                     planKey === 'free' ? 'You are currently on the free tier. Upgrade to unlock more power.'
                         : `You are on the ${currentPlan.name} plan. Thank you for your support!`;
-
-                // Dynamic Feature List
-                if (document.getElementById('plan-feature-audits')) {
-                    document.getElementById('plan-feature-audits').textContent = data.audits.limit; // Use backend limit
-                }
             }
 
-            // Usage
-            const used = data.usage?.used || 0;
-            const limit = data.usage?.limit || currentPlan.auditLimit;
-            const percentage = Math.min((used / limit) * 100, 100);
+            // Dynamic Feature List
+            if (document.getElementById('plan-feature-audits')) {
+                // Prefer backend limit, fallback to config
+                const limitDisplay = data.usage?.limit || data.audits?.limit || currentPlan.auditLimit;
+                document.getElementById('plan-feature-audits').textContent = limitDisplay;
+            }
+
+            // Usage Stats
+            const usageObj = data.usage || data.audits || {};
+            const used = usageObj.used || 0;
+            const limit = usageObj.limit || currentPlan.auditLimit;
+            const percentage = limit > 0 ? Math.min((used / limit) * 100, 100) : 100;
 
             if (document.getElementById('stat-usage-text')) {
                 document.getElementById('stat-usage-text').textContent = used;
+            }
+            if (document.getElementById('stat-usage-limit')) {
                 document.getElementById('stat-usage-limit').textContent = `/ ${limit}`;
             }
+
             if (document.getElementById('stat-usage-bar')) {
                 document.getElementById('stat-usage-bar').style.width = `${percentage}%`;
-                // Color change if near limit
                 if (percentage > 90) document.getElementById('stat-usage-bar').classList.add('bg-red-500');
                 else document.getElementById('stat-usage-bar').classList.remove('bg-red-500');
             }
 
             if (document.getElementById('stat-pages-limit')) {
                 // Use backend page limit if available, else plan default
-                document.getElementById('stat-pages-limit').textContent = data.pages?.limit || currentPlan.pageLimit;
+                const pgLimit = data.pages?.limit || currentPlan.pageLimit;
+                document.getElementById('stat-pages-limit').textContent = pgLimit;
             }
 
             // Credits
