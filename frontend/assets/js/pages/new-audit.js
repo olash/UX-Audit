@@ -52,7 +52,7 @@ async function updateCostPreview() {
             if (balance < 1) {
                 detailsEl.innerHTML = `
                     <span class="font-semibold text-red-600">Insufficient Credits</span><br>
-                    <span class="text-xs text-slate-500">You used all monthly audits. <a href="/pages/Pricing.html" class="underline text-emerald-600">Buy credits</a> to continue.</span>
+                    <span class="text-xs text-slate-500">You used all monthly audits. <a href="/pricing" class="underline text-emerald-600">Buy credits</a> to continue.</span>
                 `;
                 const btn = document.getElementById('start-btn');
                 if (btn) btn.disabled = true;
@@ -103,9 +103,9 @@ async function startAudit() {
             if (res.auditId) {
                 // If the scraper is fast enough or async, we might see it running
                 // But usually we go to dashboard or the specific result page
-                window.location.href = `/pages/Result.html?id=${res.auditId}`;
+                window.location.href = `/result?id=${res.auditId}`;
             } else {
-                window.location.href = 'Dashboard_Homepage.html';
+                window.location.href = '/dashboard';
             }
         }, 1000);
 

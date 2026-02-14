@@ -123,21 +123,16 @@ export async function generateReport(projectId) {
             throw uploadError;
         }
 
-        // 6. Get Public URL
-        const { data } = supabase.storage
-            .from('reports')
-            .getPublicUrl(storagePath);
-
-        const publicUrl = data.publicUrl;
+        // 6. Signed URL Generation is now Done on Demand
+        // We do NOT generate a public URL here.
 
         // 7. Update Project
         const { error: dbError } = await supabase
             .from('projects')
             .update({
-                report_url: publicUrl,
-                status: 'completed', // Legacy status
+                report_url: storagePath, // Store internal path
+                status: 'completed',
                 report_ready: true,
-                // Update Status: Completed (Step 5/5)
                 audit_status: 'completed',
                 audit_step: 5,
                 audit_message: 'Audit complete'
@@ -146,8 +141,8 @@ export async function generateReport(projectId) {
 
         if (dbError) throw dbError;
 
-        console.log(`✅ Report ready: ${publicUrl}`);
-        return publicUrl;
+        console.log(`✅ Report generated: ${storagePath}`);
+        return storagePath;
 
     } catch (error) {
         console.error("Generate Report Failed:", error);

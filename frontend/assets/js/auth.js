@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 window.App.toast('success', 'Logged in successfully');
                 // Allow init() to handle redirect, or force it
-                setTimeout(() => window.location.href = '/pages/Dashboard_Homepage.html', 500);
+                setTimeout(() => window.location.href = '/dashboard', 500);
 
             } catch (err) {
                 window.App.toast('error', err.message || 'Login failed');
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 window.App.toast('success', 'Account created! Please check your email.');
                 setTimeout(() => {
-                    window.location.href = '/pages/Login.html';
+                    window.location.href = '/login';
                 }, 2000);
 
             } catch (err) {

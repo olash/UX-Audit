@@ -50,7 +50,7 @@ function renderPlans() {
     container.innerHTML = Object.entries(PLANS).map(([key, plan]) => {
         const isCurrent = false; // TODO: Check user plan
         const btnText = App.user ? (isCurrent ? 'Current Plan' : 'Upgrade') : 'Sign in to continue';
-        const btnAction = App.user ? `purchaseSubscription('${key}')` : `window.location.href='Login.html'`;
+        const btnAction = App.user ? `purchaseSubscription('${key}')` : `window.location.href='/login'`;
         const btnClass = key === 'pro'
             ? 'bg-slate-900 text-white hover:bg-slate-800'
             : 'bg-slate-50 text-slate-900 border border-slate-200 hover:bg-slate-100';

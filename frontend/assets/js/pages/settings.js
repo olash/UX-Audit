@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // 2. Load Layout
     await Layout.load('nav-settings');
-    Layout.setBreadcrumbs([{ label: 'Settings', href: '/pages/Settings.html' }, { label: 'Account' }]);
+    Layout.setBreadcrumbs([{ label: 'Settings', href: '/settings' }, { label: 'Account' }]);
 
     // 3. Load Content
     await Layout.loadContent('partials/settings.html');
@@ -255,7 +255,8 @@ async function loadUsageStats() {
         // Structure: { plan, audits_per_month, audits_used, audits_remaining, credits, reset_date }
 
         const planKey = (data.plan || 'free').toLowerCase();
-        const planName = planKey.charAt(0).toUpperCase() + planKey.slice(1);
+        let planName = planKey.charAt(0).toUpperCase() + planKey.slice(1);
+        if (planKey === 'team') planName = 'Agency';
         const resetDate = new Date(data.reset_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
         // --- VISUAL LOGIC ---
@@ -272,7 +273,7 @@ async function loadUsageStats() {
             progressBarColor = 'bg-emerald-600';
         } else if (planKey === 'team') {
             badgeClass = 'bg-purple-50 text-purple-700 border-purple-200';
-            planDesc = 'Team plan active.';
+            planDesc = 'Agency plan active.';
             progressBarColor = 'bg-purple-600';
         }
 
@@ -308,8 +309,8 @@ async function loadUsageStats() {
                     <!-- Actions -->
                     <div class="flex items-center gap-3">
                          ${planKey === 'free'
-                ? `<button onclick="window.location.href='Pricing.html'" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium rounded-md shadow-sm transition-colors">Upgrade Plan</button>`
-                : `<button onclick="window.location.href='Pricing.html'" class="px-3 py-2 text-slate-600 hover:text-slate-900 text-xs font-medium bg-white border border-slate-200 hover:bg-slate-50 rounded-md transition-colors">Change Plan</button>
+                ? `<button onclick="window.location.href='/pricing'" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium rounded-md shadow-sm transition-colors">Upgrade Plan</button>`
+                : `<button onclick="window.location.href='/pricing'" class="px-3 py-2 text-slate-600 hover:text-slate-900 text-xs font-medium bg-white border border-slate-200 hover:bg-slate-50 rounded-md transition-colors">Change Plan</button>
                                <button onclick="openBillingPortal()" class="px-3 py-2 text-slate-500 hover:text-slate-800 text-xs font-medium decoration-slate-300 underline-offset-2 hover:underline">Manage Billing</button>`
             }
                     </div>
@@ -332,7 +333,7 @@ async function loadUsageStats() {
                         <div>
                             <div class="flex items-center justify-between mb-2">
                                 <span class="text-xs font-medium text-slate-700">Credit Balance</span>
-                                <button onclick="window.location.href='Pricing.html#credits'" class="text-[10px] font-medium text-emerald-600 hover:text-emerald-700">+ Buy Credits</button>
+                                <button onclick="window.location.href='/pricing#credits'" class="text-[10px] font-medium text-emerald-600 hover:text-emerald-700">+ Buy Credits</button>
                             </div>
                             <div class="flex items-center gap-2">
                                 <div class="text-xl font-bold text-slate-900 tracking-tight">${data.credits}</div>

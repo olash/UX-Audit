@@ -409,10 +409,38 @@ router.get("/:id/report", async (req, res) => {
             });
         }
 
-        // Generate (or fetch existing) PDF URL
-        const pdfUrl = await generateReport(id);
+        // 1. Check if Report Exists (via Project or Storage)
+        const { data: project } = await supabase
+            .from('projects')
+            .select('report_ready, report_url')
+            .eq('id', id)
+            .single();
 
-        res.json({ url: pdfUrl });
+        let storagePath = `reports/${id}.pdf`; // Convention
+        if (project && project.report_url && !project.report_url.startsWith('https')) {
+            // If we stored internal path
+            storagePath = project.report_url;
+        }
+
+        // 2. Refresh/Generate if missing (Optional - for now assume generateReport is called if not ready)
+        // If not ready, we trigger generation?
+        if (!project?.report_ready) {
+            console.log("Report not ready, generating now...");
+            storagePath = await generateReport(id);
+        }
+
+        // 3. Generate Signed URL (valid for 60 seconds)
+        const { data: signData, error: signError } = await supabase
+            .storage
+            .from('reports')
+            .createSignedUrl(storagePath, 60);
+
+        if (signError || !signData?.signedUrl) {
+            console.error("Signed URL generation failed:", signError);
+            return res.status(500).json({ error: "Failed to generate secure download link" });
+        }
+
+        res.json({ url: signData.signedUrl });
 
     } catch (error) {
         console.error("Report generation failed:", error);

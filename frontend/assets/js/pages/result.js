@@ -86,22 +86,44 @@ async function loadFullProjectData(auditId) {
         btn.disabled = true;
         btn.innerHTML = `<span class="iconify" data-icon="lucide:lock" data-width="14"></span> Upgrade to Export`;
         btn.className = "group inline-flex items-center gap-2 bg-slate-100 text-slate-500 text-xs font-medium px-3 py-2 rounded border border-slate-200 hover:bg-slate-200 transition-colors cursor-pointer";
-        btn.onclick = () => window.location.href = '/pages/Pricing.html';
+        btn.onclick = () => window.location.href = '/pricing';
         // Make it clickable to go to pricing even if "disabled" look? 
         // Better: Remove disabled attribute but keep style.
         btn.disabled = false;
     } else if (project.report_ready && project.report_url) {
         btn.disabled = false;
         btn.innerHTML = `<span class="iconify" data-icon="lucide:download" data-width="16"></span> Download Report`;
-        btn.onclick = () => {
-            if (window.posthog) {
-                posthog.capture('download_pdf_clicked', {
-                    audit_id: project.id,
-                    plan: (App.user?.plan || 'unknown'), // Ideally pass plan if available or rely on backend identify
-                    url: project.report_url
-                });
+
+        btn.onclick = async () => {
+            try {
+                // Loading State
+                const originalText = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = `<span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="14"></span> Preparing...`;
+
+                // Fetch Signed URL
+                const res = await App.api.get(`/audits/${project.id}/report`);
+
+                if (window.posthog) {
+                    posthog.capture('download_pdf_clicked', {
+                        audit_id: project.id,
+                        plan: (App.user?.plan || 'unknown')
+                    });
+                }
+
+                if (res.url) {
+                    window.open(res.url, '_blank');
+                } else {
+                    throw new Error("No URL returned");
+                }
+            } catch (err) {
+                console.error("Download failed", err);
+                App.toast('error', "Failed to download report. Please try again.");
+            } finally {
+                // Reset Button
+                btn.disabled = false;
+                btn.innerHTML = `<span class="iconify" data-icon="lucide:download" data-width="16"></span> Download Report`;
             }
-            window.open(project.report_url, '_blank');
         };
         btn.className = "group inline-flex items-center gap-2 bg-slate-950 hover:bg-slate-800 text-white text-xs font-medium px-3 py-2 rounded shadow-sm transition-all";
     } else {

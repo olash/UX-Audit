@@ -21,7 +21,7 @@ export const PLANS = {
         priceId: '1284104'
     },
     team: {
-        name: 'Team',
+        name: 'Agency',
         pages: 75,
         audits: 75,
         price: 79,

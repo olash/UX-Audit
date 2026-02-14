@@ -265,7 +265,8 @@ const Layout = {
             // Data: { plan, audits_per_month, audits_used, audits_remaining, credits }
 
             const plan = (data.plan || 'freemium').toLowerCase();
-            const planDisplay = plan.charAt(0).toUpperCase() + plan.slice(1);
+            let planDisplay = plan.charAt(0).toUpperCase() + plan.slice(1);
+            if (plan === 'team') planDisplay = 'Agency';
 
             // Badge Colors
             let badgeClass = 'bg-slate-100 text-slate-600 border-slate-200'; // Free/Default

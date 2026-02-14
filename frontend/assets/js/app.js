@@ -54,7 +54,7 @@ const App = {
                 // Only redirect if explicitly on an auth page to avoid redirect loops
                 const isAuthPage = ['Login.html', 'Signup.html', 'ResetPassword.html'].some(p => window.location.pathname.includes(p));
                 if (isAuthPage) {
-                    window.location.href = '/pages/Dashboard_Homepage.html';
+                    window.location.href = '/dashboard';
                 }
             }
             if (event === 'SIGNED_OUT') {
@@ -62,7 +62,7 @@ const App = {
                 const isAuthPage = ['Login.html', 'Signup.html', 'ResetPassword.html', 'Landing Page.html', 'index.html'].some(p => window.location.pathname.includes(p));
                 // Allow public landing page
                 if (!isAuthPage && window.location.pathname !== '/' && !window.location.pathname.endsWith('/pages/index.html')) {
-                    window.location.href = '/pages/index.html';
+                    window.location.href = '/';
                 }
             }
         });
@@ -87,7 +87,7 @@ const App = {
             password,
             options: {
                 data: { first_name: firstName, last_name: lastName },
-                emailRedirectTo: window.location.origin + '/frontend/pages/Dashboard_Homepage.html'
+                emailRedirectTo: window.location.origin + '/login'
             }
         });
         if (error) throw error;
@@ -96,7 +96,7 @@ const App = {
 
     resetPassword: async (email) => {
         const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: window.location.origin + '/frontend/pages/ResetPassword.html'
+            redirectTo: window.location.origin + '/reset-password'
         });
         if (error) throw error;
         return data;
@@ -117,7 +117,7 @@ const App = {
 
     logout: async () => {
         await supabase.auth.signOut();
-        window.location.replace('/pages/index.html');
+        window.location.replace('/');
     },
 
     // API Helper

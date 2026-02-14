@@ -29,7 +29,7 @@ export const PLANS = {
         ]
     },
     team: {
-        name: 'Team',
+        name: 'Agency',
         auditLimit: 75,
         pageLimit: 75,
         price: 79,
@@ -37,7 +37,7 @@ export const PLANS = {
         features: [
             '75 audits / month',
             '75 pages per audit',
-            'Unlimited Team Members',
+            'Unlimited Agency Members',
             'White-label Reports',
             'Priority Support'
         ]

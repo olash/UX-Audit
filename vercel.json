@@ -8,11 +8,75 @@
             "dest": "http://ux-audit-alb-1605700393.us-east-1.elb.amazonaws.com/api/$1"
         },
         {
-            "handle": "filesystem"
+            "src": "/login",
+            "dest": "/pages/Login.html"
         },
         {
-            "src": "/(.*)",
-            "dest": "/index.html"
+            "src": "/signup",
+            "dest": "/pages/Signup.html"
+        },
+        {
+            "src": "/dashboard",
+            "dest": "/pages/Dashboard_Homepage.html"
+        },
+        {
+            "src": "/audit/new",
+            "dest": "/pages/NewAudit.html"
+        },
+        {
+            "src": "/reports",
+            "dest": "/pages/Reports.html"
+        },
+        {
+            "src": "/settings",
+            "dest": "/pages/Settings.html"
+        },
+        {
+            "src": "/community",
+            "dest": "/pages/Community.html"
+        },
+        {
+            "src": "/pricing",
+            "dest": "/pages/Pricing.html"
+        },
+        {
+            "src": "/terms",
+            "dest": "/pages/Terms.html"
+        },
+        {
+            "src": "/privacy",
+            "dest": "/pages/Privacy.html"
+        },
+        {
+            "src": "/refunds",
+            "dest": "/pages/Refunds.html"
+        },
+        {
+            "src": "/reset-password",
+            "dest": "/pages/ResetPassword.html"
+        },
+        {
+            "src": "/auth/callback",
+            "dest": "/pages/callback.html"
+        },
+        {
+            "src": "/billing/success",
+            "dest": "/pages/BillingSuccess.html"
+        },
+        {
+            "src": "/result",
+            "dest": "/pages/Result.html"
+        },
+        {
+            "src": "/404",
+            "dest": "/pages/404.html"
+        },
+        {
+            "src": "/",
+            "dest": "/pages/index.html"
+        },
+        {
+            "handle": "filesystem"
         }
     ]
 }
