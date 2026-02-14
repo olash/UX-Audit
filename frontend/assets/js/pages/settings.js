@@ -270,9 +270,9 @@ async function loadUsageStats() {
             badgeClass = 'bg-emerald-50 text-emerald-700 border-emerald-200';
             planDesc = 'Pro plan active. You have access to advanced features.';
             progressBarColor = 'bg-emerald-600';
-        } else if (planKey === 'team') {
+        } else if (planKey === 'agency') {
             badgeClass = 'bg-purple-50 text-purple-700 border-purple-200';
-            planDesc = 'Team plan active.';
+            planDesc = 'Agency plan active.';
             progressBarColor = 'bg-purple-600';
         }
 

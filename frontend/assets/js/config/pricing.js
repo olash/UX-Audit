@@ -28,8 +28,8 @@ export const PLANS = {
             'Commercial Use'
         ]
     },
-    team: {
-        name: 'Team',
+    agency: {
+        name: 'Agency',
         auditLimit: 75,
         pageLimit: 75,
         price: 79,

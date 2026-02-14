@@ -18,7 +18,7 @@ router.use(express.json({
 const PLAN_MAP = {
     "1292487": "starter",
     "1284104": "pro",
-    "1284106": "team"
+    "1284106": "agency"
 };
 
 const CREDIT_MAP = {
