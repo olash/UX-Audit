@@ -58,15 +58,15 @@ async function loadFullProjectData(auditId) {
     // Bind Download Button
     const btn = document.getElementById('btn-download');
 
-    // Fetch user plan entitlement
+    // Fetch user plan entitlement (Legacy check, kept for potential future use or context, but not used for blocking)
     let userPlan = 'free';
     try {
         const { data: profile } = await App.api.get('/me');
         if (profile && profile.plan) userPlan = profile.plan.toLowerCase();
     } catch (e) { console.warn("Plan check failed", e); }
 
-    // User Logic: canDownload = user.plan !== "free" && project.report_url
-    const canDownload = userPlan !== 'free' && project.report_url;
+    // User Logic: ALLOW ALL DONWLOADS (project.report_url must exist)
+    const canDownload = !!project.report_url;
 
     if (canDownload) {
         btn.disabled = false;
@@ -81,20 +81,10 @@ async function loadFullProjectData(auditId) {
             window.open(project.report_url, '_blank');
         };
     } else {
-        // Handle blocked or loading states
-        // If report is not ready yet, but plan is allowed, show generating.
-        // If plan is free, show upgrade.
-
-        if (userPlan === 'free') {
-            btn.disabled = false; // Allow click to upgrade
-            btn.innerHTML = `<span class="iconify" data-icon="lucide:lock" data-width="14"></span> Upgrade to Export`;
-            btn.className = "group inline-flex items-center gap-2 bg-slate-100 text-slate-500 text-xs font-medium px-3 py-2 rounded border border-slate-200 hover:bg-slate-200 transition-colors cursor-pointer";
-            btn.onclick = () => window.location.href = '/pages/Pricing.html';
-        } else if (!project.report_url) {
-            btn.disabled = true;
-            btn.innerHTML = `<span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="14"></span> Generating PDF...`;
-            btn.className = "group inline-flex items-center gap-2 bg-slate-100 text-slate-400 text-xs font-medium px-3 py-2 rounded border border-slate-200 cursor-not-allowed";
-        }
+        // Generating State (or Error, effectively)
+        btn.disabled = true;
+        btn.innerHTML = `<span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="14"></span> Generating PDF...`;
+        btn.className = "group inline-flex items-center gap-2 bg-slate-100 text-slate-400 text-xs font-medium px-3 py-2 rounded border border-slate-200 cursor-not-allowed";
     }
 
     // Bind Re-run Button

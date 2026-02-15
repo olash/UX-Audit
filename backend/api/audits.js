@@ -392,22 +392,15 @@ router.get("/:id/report", async (req, res) => {
         const { id } = req.params;
 
         // Check Plan
+        // Check Plan (Fetching plan just for logging/context if needed, but restriction removed)
         const { data: profile } = await supabase
             .from('profiles')
             .select('plan')
             .eq('id', user.id)
             .single();
 
-        const planName = (profile?.plan || 'free').toLowerCase();
-        const entitlements = PLAN_ENTITLEMENTS[planName];
-
-        if (!entitlements || !entitlements.canGenerateReports) {
-            console.warn(`⛔ PDF blocked for user ${user.id} (Plan: ${planName})`);
-            return res.status(403).json({
-                error: "Upgrade Required",
-                message: "PDF reports are available on Starter plans and above."
-            });
-        }
+        // const planName = (profile?.plan || 'free').toLowerCase();
+        // PDF Reports are now available for ALL plans.
 
         // Generate (or fetch existing) PDF URL
         const pdfUrl = await generateReport(id);

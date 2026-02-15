@@ -197,26 +197,12 @@ export async function finalizeProject(projectId) {
             });
             // ------------------------------
 
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('plan')
-                .eq('id', projectUser.user_id)
-                .single();
-
-            const planName = (profile?.plan || 'free').toLowerCase();
-            const entitlements = PLAN_ENTITLEMENTS[planName];
-
-            if (entitlements && entitlements.canGenerateReports) {
-                // Using setImmediate to not block the current stack
-                setImmediate(() => {
-                    console.log("🚀 Triggering background PDF generation...");
-                    // Pass explicit checks if needed, but generateReport handles it? 
-                    // No, generateReport just runs. Check is here.
-                    generateReport(projectId).catch(err => console.error("Background PDF Gen Failed:", err));
-                });
-            } else {
-                console.log(`ℹ️ Skipping PDF generation for user ${projectUser.user_id} (Plan: ${planName})`);
-            }
+            // PDF Generation: Enabled for ALL users (Requested Change)
+            // Using setImmediate to not block the current stack
+            setImmediate(() => {
+                console.log("🚀 Triggering background PDF generation...");
+                generateReport(projectId).catch(err => console.error("Background PDF Gen Failed:", err));
+            });
         }
 
     } catch (err) {
