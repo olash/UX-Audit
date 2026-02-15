@@ -58,41 +58,20 @@ async function loadFullProjectData(auditId) {
     // Bind Download Button
     const btn = document.getElementById('btn-download');
 
-    // Enterprise Polish: Button States
-    // Case 1: Free Plan + Monthly Source -> BLOCKED (Upgrade)
-    // Case 2: Generating -> LOADING
-    // Case 3: Ready -> DOWNLOAD
-
-    // We need to know plan and payment_source. 
-    // project has payment_source. We need user plan. 
-    // We can fetch profile or assume passed in project (not yet).
-    // Let's assume we fetch profile here or check App.user?
-    // App.user has basic info. 
-    // Let's fetch profile quickly or check if project has metadata.
-
-    // Quick fetch for entitlements
-    let isFreeMonthly = false;
+    // Fetch user plan entitlement
+    let userPlan = 'free';
     try {
-        const { data: profile } = await App.api.get('/me'); // Assuming /api/me exists and returns plan
-        const plan = (profile?.plan || 'free').toLowerCase();
-        const source = project.payment_source || project.metadata?.usage_type || 'monthly';
-
-        if (plan === 'free' && source === 'monthly') {
-            isFreeMonthly = true;
-        }
+        const { data: profile } = await App.api.get('/me');
+        if (profile && profile.plan) userPlan = profile.plan.toLowerCase();
     } catch (e) { console.warn("Plan check failed", e); }
 
-    if (isFreeMonthly) {
-        btn.disabled = true;
-        btn.innerHTML = `<span class="iconify" data-icon="lucide:lock" data-width="14"></span> Upgrade to Export`;
-        btn.className = "group inline-flex items-center gap-2 bg-slate-100 text-slate-500 text-xs font-medium px-3 py-2 rounded border border-slate-200 hover:bg-slate-200 transition-colors cursor-pointer";
-        btn.onclick = () => window.location.href = '/pages/Pricing.html';
-        // Make it clickable to go to pricing even if "disabled" look? 
-        // Better: Remove disabled attribute but keep style.
+    // User Logic: canDownload = user.plan !== "free" && project.report_url
+    const canDownload = userPlan !== 'free' && project.report_url;
+
+    if (canDownload) {
         btn.disabled = false;
-    } else if (project.report_ready && project.report_url) {
-        btn.disabled = false;
-        btn.innerHTML = `<span class="iconify" data-icon="lucide:download" data-width="16"></span> Download Report`;
+        btn.innerHTML = `<span class="iconify" data-icon="lucide:download" data-width="16"></span> Download PDF`;
+        btn.className = "group inline-flex items-center gap-2 bg-slate-950 hover:bg-slate-800 text-white text-xs font-medium px-3 py-2 rounded shadow-sm transition-all";
         btn.onclick = () => {
             if (window.posthog) {
                 posthog.capture('report_downloaded', {
@@ -101,11 +80,21 @@ async function loadFullProjectData(auditId) {
             }
             window.open(project.report_url, '_blank');
         };
-        btn.className = "group inline-flex items-center gap-2 bg-slate-950 hover:bg-slate-800 text-white text-xs font-medium px-3 py-2 rounded shadow-sm transition-all";
     } else {
-        btn.disabled = true;
-        btn.innerHTML = `<span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="14"></span> Generating PDF...`;
-        btn.className = "group inline-flex items-center gap-2 bg-slate-100 text-slate-400 text-xs font-medium px-3 py-2 rounded border border-slate-200 cursor-not-allowed";
+        // Handle blocked or loading states
+        // If report is not ready yet, but plan is allowed, show generating.
+        // If plan is free, show upgrade.
+
+        if (userPlan === 'free') {
+            btn.disabled = false; // Allow click to upgrade
+            btn.innerHTML = `<span class="iconify" data-icon="lucide:lock" data-width="14"></span> Upgrade to Export`;
+            btn.className = "group inline-flex items-center gap-2 bg-slate-100 text-slate-500 text-xs font-medium px-3 py-2 rounded border border-slate-200 hover:bg-slate-200 transition-colors cursor-pointer";
+            btn.onclick = () => window.location.href = '/pages/Pricing.html';
+        } else if (!project.report_url) {
+            btn.disabled = true;
+            btn.innerHTML = `<span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="14"></span> Generating PDF...`;
+            btn.className = "group inline-flex items-center gap-2 bg-slate-100 text-slate-400 text-xs font-medium px-3 py-2 rounded border border-slate-200 cursor-not-allowed";
+        }
     }
 
     // Bind Re-run Button
