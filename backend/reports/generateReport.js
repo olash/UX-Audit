@@ -146,6 +146,21 @@ export async function generateReport(projectId) {
 
         if (dbError) throw dbError;
 
+        // Track PDF Generation
+        try {
+            if (posthog) {
+                posthog.capture({
+                    distinctId: project.user_id,
+                    event: 'pdf_generated',
+                    properties: {
+                        project_id: projectId
+                    }
+                });
+            }
+        } catch (phError) {
+            console.error('PostHog PDF Error:', phError);
+        }
+
         console.log(`✅ Report ready: ${publicUrl}`);
         return publicUrl;
 

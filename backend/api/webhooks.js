@@ -99,11 +99,13 @@ router.post('/', verifySignature, async (req, res) => {
                     if (posthog) {
                         posthog.capture({
                             distinctId: userId,
-                            event: 'subscription_updated', // or 'subscription_created' based on eventName if needed, but 'updated' covers change
+                            event: 'plan_upgraded',
                             properties: {
-                                plan: planName,
-                                status: attributes.status,
-                                amount: attributes.total_formatted
+                                new_plan: planName,
+                                price: attributes.total / 100 // attributes.total is in cents usually? LS sends total_formatted which is string, total is int cents. User wants 29.
+                                // Let's try to get a numeric value. 
+                                // attributes.total is integer cents.
+                                // attributes.total_formatted is string "$29.00".
                             }
                         });
                     }
@@ -168,10 +170,10 @@ router.post('/', verifySignature, async (req, res) => {
                 if (posthog) {
                     posthog.capture({
                         distinctId: userId,
-                        event: 'credits_purchased',
+                        event: 'credit_purchased',
                         properties: {
-                            amount: credits,
-                            price: attributes.total_formatted
+                            credits: credits,
+                            amount: attributes.total / 100
                         }
                     });
                 }

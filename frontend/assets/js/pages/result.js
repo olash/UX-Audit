@@ -95,10 +95,8 @@ async function loadFullProjectData(auditId) {
         btn.innerHTML = `<span class="iconify" data-icon="lucide:download" data-width="16"></span> Download Report`;
         btn.onclick = () => {
             if (window.posthog) {
-                posthog.capture('download_pdf_clicked', {
-                    audit_id: project.id,
-                    plan: (App.user?.plan || 'unknown'), // Ideally pass plan if available or rely on backend identify
-                    url: project.report_url
+                posthog.capture('report_downloaded', {
+                    project_id: project.id
                 });
             }
             window.open(project.report_url, '_blank');

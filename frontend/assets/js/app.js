@@ -87,10 +87,25 @@ const App = {
             password,
             options: {
                 data: { first_name: firstName, last_name: lastName },
-                emailRedirectTo: window.location.origin + '/frontend/pages/Dashboard_Homepage.html'
+                emailRedirectTo: window.location.origin + '/frontend/pages/Login.html'
             }
         });
         if (error) throw error;
+
+        // Track signup - using user.id if available immediately, or data.user.id
+        if (data?.user) {
+            try {
+                if (posthog) {
+                    posthog.identify(data.user.id, { email: data.user.email, plan: 'free' });
+                    posthog.capture('user_signed_up', {
+                        distinctId: data.user.id,
+                        plan: 'free',
+                        method: 'email'
+                    });
+                }
+            } catch (e) { console.warn("PostHog signup track failed", e); }
+        }
+
         return data;
     },
 
