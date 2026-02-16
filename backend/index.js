@@ -1,56 +1,64 @@
-import express from "express";
-import cors from "cors";
-import path from "path";
-import { fileURLToPath } from 'url';
-import auditRoutes from "./api/audits.js";
-import userRoutes from "./api/users.js";
-import checkoutRouter from "./api/checkout.js";
-import webhooksRouter from "./api/webhooks.js";
+import { crawlSite } from "./scraper/crawl.js";
 import dotenv from "dotenv";
+import path from "path";
 
 // Load environment variables from root
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+export const handler = async (event, context) => {
+    console.log("INVOCATION EVENT:", JSON.stringify(event, null, 2));
 
-const app = express();
-app.set('trust proxy', 1); // Required for ECS/ALB to correctly identify IPs
+    let body = event;
 
-// Webhooks must handle their own body parsing (stream/raw)
-app.use("/api/webhooks", webhooksRouter);
+    // Handle API Gateway event structure where body is a string
+    if (event.body) {
+        try {
+            body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+        } catch (e) {
+            console.warn("Failed to parse event.body", e);
+            body = event.body; // Fallback
+        }
+    }
 
-app.use(cors());
-app.use(express.json());
+    const { url, projectId } = body;
 
-// Security Layer 0: Helmet (Headers)
-import helmet from "helmet";
-app.use(helmet());
+    // Basic Validation
+    if (!url) {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({ error: "Missing 'url' in request body" })
+        };
+    }
 
-// Security Layer 1: Global Rate Limiting
-import rateLimit from 'express-rate-limit';
-const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 300, // Increased limit for scraping bursts (User Request: "World Class")
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: "Too many requests, please try again later." }
-});
-app.use(globalLimiter);
+    try {
+        console.log(`🚀 Starting Audit for Project: ${projectId} | URL: ${url}`);
 
-app.get("/", (req, res) => {
-    res.status(200).send('OK');
-});
+        // Execute the crawl logic
+        // Ensure projectId is passed if available, otherwise crawlSite might fail DB updates
+        // We pass a dummy ID or null if missing, but crawlSite logic depends on it.
+        if (!projectId) {
+            console.warn("⚠️ No projectId provided. Database updates may fail.");
+        }
 
-app.get("/health", (req, res) => {
-    res.status(200).json({ status: "ok" });
-});
+        const pageCount = await crawlSite(url, projectId);
 
-// Routes
-app.use("/api/audits", auditRoutes);
-app.use("/api", userRoutes); // Mount at /api so we get /api/me, /api/usage
-app.use("/api/checkout", checkoutRouter);
+        return {
+            statusCode: 200,
+            body: JSON.stringify({
+                status: "Success",
+                pages_scanned: pageCount,
+                project_id: projectId
+            })
+        };
 
-app.listen(4000, "0.0.0.0", () => {
-    console.log("Backend running on port 4000");
-});
+    } catch (error) {
+        console.error("❌ Lambda Handler Error:", error);
+        return {
+            statusCode: 500,
+            body: JSON.stringify({
+                error: "Internal Server Error",
+                message: error.message
+            })
+        };
+    }
+};

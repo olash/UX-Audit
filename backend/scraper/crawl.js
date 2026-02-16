@@ -1,4 +1,5 @@
-import { chromium } from "playwright";
+import chromium from "@sparticuz/chromium";
+import playwright from "playwright-core";
 import fs from "fs";
 import { normalizeUrl, isInternalLink, ensureScreenshotDir } from "./utils.js";
 import { captureScreenshot, processScreenshot } from "./screenshot.js";
@@ -12,13 +13,11 @@ export async function crawlSite(startUrl, projectId, maxPages = 10) {
     const visited = new Set();
     const queue = [startUrl];
 
-    const browser = await chromium.launch({
-        headless: true,
-        args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage"
-        ]
+    const browser = await playwright.chromium.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
     });
     const context = await browser.newContext({
         ignoreHTTPSErrors: true,
