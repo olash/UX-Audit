@@ -102,10 +102,7 @@ router.post('/', verifySignature, async (req, res) => {
                             event: 'plan_upgraded',
                             properties: {
                                 new_plan: planName,
-                                price: attributes.total / 100 // attributes.total is in cents usually? LS sends total_formatted which is string, total is int cents. User wants 29.
-                                // Let's try to get a numeric value. 
-                                // attributes.total is integer cents.
-                                // attributes.total_formatted is string "$29.00".
+                                amount: attributes.total / 100 // attributes.total is in cents, converts to dollars (e.g. 49)
                             }
                         });
                     }
