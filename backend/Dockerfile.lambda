@@ -1,12 +1,38 @@
-# 1. Use the AWS Node.js 20 base image
+# 1. Use the Official AWS Lambda Node.js 20 base image
 FROM public.ecr.aws/lambda/nodejs:20
 
-# 2. Copy package files and install dependencies
+# 2. Install library dependencies for Chromium (CRITICAL)
+# Even though we use sparticuz, the OS needs these C++ libraries to run the browser.
+RUN dnf install -y \
+    nss \
+    alsa-lib \
+    atk \
+    at-spi2-atk \
+    cups-libs \
+    libdrm \
+    libXcomposite \
+    libXcursor \
+    libXdamage \
+    libXext \
+    libXi \
+    libXrandr \
+    libXScrnSaver \
+    libXtst \
+    pango \
+    gtk3 \
+    libX11 \
+    xcb-util \
+    libxkbcommon \
+    xorg-x11-server-Xvfb \
+    && dnf clean all
+
+# 3. Copy dependencies and install
 COPY package.json package-lock.json ${LAMBDA_TASK_ROOT}/
 RUN npm ci
 
-# 3. Copy source code
+# 4. Copy your actual code
 COPY . ${LAMBDA_TASK_ROOT}/
 
-# 4. Set the CMD to your handler (index.handler)
+# 5. Tell Lambda exactly where the handler is
+# "index" = filename (index.js), "handler" = exported function name
 CMD [ "index.handler" ]

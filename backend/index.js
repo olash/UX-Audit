@@ -6,6 +6,15 @@ import path from "path";
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 export const handler = async (event, context) => {
+    // --- WARMUP LOGIC START ---
+    // If this is a "keep-alive" ping, quit immediately.
+    // This keeps the container warm but costs almost $0 because it runs in 2ms.
+    if (event.type === 'warmup' || (event.body && (typeof event.body === 'string' ? JSON.parse(event.body).type === 'warmup' : event.body.type === 'warmup'))) {
+        console.log("🔥 Warmup ping received! Staying alive...");
+        return { statusCode: 200, body: "Warmed!" };
+    }
+    // --- WARMUP LOGIC END ---
+
     console.log("INVOCATION EVENT:", JSON.stringify(event, null, 2));
 
     let body = event;

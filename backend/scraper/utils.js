@@ -2,7 +2,7 @@ import path from "path";
 import { URL } from "url";
 import fs from "fs";
 
-export const OUTPUT_DIR = path.resolve(process.cwd(), "screenshots");
+export const OUTPUT_DIR = "/tmp";
 
 export function ensureScreenshotDir() {
     if (!fs.existsSync(OUTPUT_DIR)) {
