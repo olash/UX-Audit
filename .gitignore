@@ -16,6 +16,7 @@ yarn-error.log*
 dist/
 .cache/
 
-# Screenshots / reports (if generated locally)
+# Screenshots / reports (generated output only — NOT source JS files)
 screenshots/
-reports/
+*.pdf
+backend/reports/*.png
