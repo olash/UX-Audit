@@ -1,72 +1,32 @@
 import dotenv from "dotenv";
 import path from "path";
-import { fileURLToPath } from "url";
-import { crawlSite } from "./scraper/crawl.js";
-import { finalizeProject } from "./db/finalizeProject.js";
-import { checkUsage } from "./utils/usage.js";
-import { supabase } from "./db/supabase.js";
+import { runScraper } from "./scraper/scraper.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
-// Load environment variables from root .env
-dotenv.config({ path: path.resolve(__dirname, ".env") });
-
-async function runBackgroundWorker() {
+async function startWorker() {
     const projectId = process.env.PROJECT_ID;
     const url = process.env.URL;
-    const userId = process.env.USER_ID;
-    const pageLimit = parseInt(process.env.PAGE_LIMIT || "10", 10);
+    const pageLimit = parseInt(process.env.PAGE_LIMIT, 10);
 
     if (!projectId || !url) {
-        console.error("❌ [ECS Worker] Missing required environment variables: PROJECT_ID, URL");
+        console.error("❌ Missing required environment variables!");
         process.exit(1);
     }
 
-    console.log(`🚀 [ECS Worker] Starting audit for project ${projectId} | URL: ${url} | Limit: ${pageLimit} pages`);
-
     try {
-        // Step 1: Update project status to crawling
-        await supabase.from("projects").update({
-            status: "running",
-            progress_step: 2,
-            progress_label: "Crawling site map..."
-        }).eq("id", projectId);
+        console.log(`🚀 [ECS Worker] Starting heavy background audit for ${url} (Limit: ${pageLimit})`);
 
-        // Step 2: Run the crawler
-        const pageCount = await crawlSite(url, projectId, pageLimit);
-        console.log(`✅ [ECS Worker] Crawl complete. Pages scanned: ${pageCount}`);
+        // Run the actual Playwright scraper (crawl + AI analysis + PDF generation)
+        await runScraper(url, projectId, pageLimit);
 
-        if (pageCount > 0) {
-            // Step 3: Finalize (score calculation + PDF generation)
-            console.log("📊 [ECS Worker] Finalizing project (scores + PDF)...");
-            await finalizeProject(projectId);
-            console.log("✅ [ECS Worker] Audit complete. Shutting down container.");
-        } else {
-            console.warn("⚠️ [ECS Worker] No pages scanned. Marking as failed.");
-            await supabase.from("projects").update({
-                status: "failed",
-                progress_label: "No pages could be crawled."
-            }).eq("id", projectId);
-        }
-
-        process.exit(0); // CRITICAL: Kills the container and stops billing immediately
+        console.log("✅ [ECS Worker] Audit and PDF generation complete. Shutting down container.");
+        process.exit(0); // CRITICAL: This line stops the AWS billing!
 
     } catch (error) {
         console.error("❌ [ECS Worker] Fatal error during audit:", error);
-
-        // Mark project as failed in DB
-        try {
-            await supabase.from("projects").update({
-                status: "failed",
-                progress_label: `Error: ${error.message}`
-            }).eq("id", projectId);
-        } catch (dbErr) {
-            console.error("❌ [ECS Worker] Could not update project status:", dbErr.message);
-        }
-
-        process.exit(1); // Kills container on failure
+        process.exit(1);
     }
 }
 
-runBackgroundWorker();
+startWorker();

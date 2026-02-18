@@ -234,39 +234,54 @@ router.post("/", auditLimiter, async (req, res) => {
             console.error('PostHog Error:', phError);
         }
 
-        // 2. Trigger ECS Fargate Spot Worker (fire-and-forget, self-terminating)
-        const ecsParams = {
-            cluster: ECS_CLUSTER,
-            taskDefinition: ECS_TASK_DEFINITION,
-            capacityProviderStrategy: [
-                { capacityProvider: "FARGATE_SPOT", weight: 1 }
-            ],
-            networkConfiguration: {
-                awsvpcConfiguration: {
-                    subnets: ECS_SUBNETS,
-                    securityGroups: ECS_SECURITY_GROUPS,
-                    assignPublicIp: "ENABLED"
-                }
-            },
-            overrides: {
-                containerOverrides: [
-                    {
-                        name: "audit-container",
-                        command: ["node", "worker.js"],
-                        environment: [
-                            { name: "PROJECT_ID", value: project.id },
-                            { name: "URL", value: url },
-                            { name: "USER_ID", value: user.id },
-                            { name: "PAGE_LIMIT", value: String(effectivePageLimit) }
+        // 2. Start (async) scrape via AWS ECS Fargate Spot
+        (async () => {
+            try {
+                await supabase.from('projects').update({
+                    progress_step: 2,
+                    progress_label: 'Spinning up audit server...'
+                }).eq('id', project.id);
+
+                console.log(`[DEBUG] Triggering ECS Fargate Spot for project ${project.id}`);
+
+                const params = {
+                    cluster: ECS_CLUSTER,
+                    taskDefinition: ECS_TASK_DEFINITION,
+                    capacityProviderStrategy: [
+                        { capacityProvider: "FARGATE_SPOT", weight: 1 } // 🔥 70% Discount!
+                    ],
+                    networkConfiguration: {
+                        awsvpcConfiguration: {
+                            subnets: ECS_SUBNETS,
+                            securityGroups: ECS_SECURITY_GROUPS,
+                            assignPublicIp: "ENABLED"
+                        }
+                    },
+                    overrides: {
+                        containerOverrides: [
+                            {
+                                name: "audit-container",
+                                environment: [
+                                    { name: "PROJECT_ID", value: project.id },
+                                    { name: "URL", value: url },
+                                    { name: "PAGE_LIMIT", value: effectivePageLimit.toString() }
+                                ]
+                            }
                         ]
                     }
-                ]
+                };
+
+                await ecsClient.send(new RunTaskCommand(params));
+                console.log(`✅ ECS Task launched successfully for ${url}`);
+
+            } catch (err) {
+                console.error("❌ Failed to launch ECS task:", err);
+                await supabase.from('projects').update({
+                    status: 'failed',
+                    progress_label: 'Error launching audit server: ' + err.message
+                }).eq('id', project.id);
             }
-        };
-
-        await ecsClient.send(new RunTaskCommand(ecsParams));
-        console.log(`🚀 [ECS] Worker task launched for project ${project.id}`);
-
+        })();
 
         return res.status(202).json({
             message: "Audit started in the background. Please wait.",
