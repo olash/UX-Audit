@@ -1,11 +1,22 @@
 import express from "express";
-import { createProject } from "../db/createProject.js";
-import { runScraper } from "../scraper/scraper.js";
 import { supabase } from "../db/supabase.js";
 import { posthog } from '../utils/posthog.js';
 import { generateReport } from "../reports/generateReport.js";
-import { checkUsage } from "../utils/usage.js";
 import { PLAN_ENTITLEMENTS } from "../config/pricing.js";
+import { ECSClient, RunTaskCommand } from "@aws-sdk/client-ecs";
+
+// ECS Client for triggering Fargate Spot worker tasks
+const ecsClient = new ECSClient({ region: "us-east-1" });
+
+// ECS Network Config (Fargate Spot)
+const ECS_CLUSTER = "ux-audit-cluster";
+const ECS_TASK_DEFINITION = "ux-audit-worker";
+const ECS_SUBNETS = [
+    "subnet-0996df47a3651f00a",
+    "subnet-08c5b5ebd0eb6d56b",
+    "subnet-0036300c6165e50a5"
+];
+const ECS_SECURITY_GROUPS = ["sg-0f7a0cf4cae753a8d"];
 
 const router = express.Router();
 
@@ -223,43 +234,43 @@ router.post("/", auditLimiter, async (req, res) => {
             console.error('PostHog Error:', phError);
         }
 
-        // 2. Start (async) scrape
-        (async () => {
-            try {
-                // Step 2: Crawling
-                await supabase.from('projects').update({
-                    progress_step: 2,
-                    progress_label: 'Crawling site map...'
-                }).eq('id', project.id);
-
-                // Run Scraper
-                const { runScraper } = await import('../scraper/scraper.js');
-
-                console.log(`[DEBUG] Starting scraper with limit: ${effectivePageLimit}`);
-                const result = await runScraper(url, project.id, effectivePageLimit);
-
-                // Note: Credit Deduction is now handled in finalizeProject.js (or at end of scrape if inline)
-                // The User requested: "Credits deducted only after successful crawl".
-                // Since finalizeProject is where success is confirmed/finalized, we should move logic there.
-                // However, runScraper returns result here. 
-                // If we do it here, it's safer against "finalize failed but scrape worked".
-
-                // ... But wait, finalizeProject is called BY the scraper or after?
-                // Inspecting codebase... usually scraper calls finalize? 
-                // Let's check scraper.js
-
-            } catch (err) {
-                console.error("Background audit error:", err);
-                await supabase.from('projects').update({
-                    status: 'failed',
-                    progress_label: 'Error: ' + err.message
-                }).eq('id', project.id);
+        // 2. Trigger ECS Fargate Spot Worker (fire-and-forget, self-terminating)
+        const ecsParams = {
+            cluster: ECS_CLUSTER,
+            taskDefinition: ECS_TASK_DEFINITION,
+            capacityProviderStrategy: [
+                { capacityProvider: "FARGATE_SPOT", weight: 1 }
+            ],
+            networkConfiguration: {
+                awsvpcConfiguration: {
+                    subnets: ECS_SUBNETS,
+                    securityGroups: ECS_SECURITY_GROUPS,
+                    assignPublicIp: "ENABLED"
+                }
+            },
+            overrides: {
+                containerOverrides: [
+                    {
+                        name: "audit-container",
+                        command: ["node", "worker.js"],
+                        environment: [
+                            { name: "PROJECT_ID", value: project.id },
+                            { name: "URL", value: url },
+                            { name: "USER_ID", value: user.id },
+                            { name: "PAGE_LIMIT", value: String(effectivePageLimit) }
+                        ]
+                    }
+                ]
             }
-        })();
+        };
+
+        await ecsClient.send(new RunTaskCommand(ecsParams));
+        console.log(`🚀 [ECS] Worker task launched for project ${project.id}`);
 
 
-        return res.status(201).json({
-            message: "Audit started",
+        return res.status(202).json({
+            message: "Audit started in the background. Please wait.",
+            status: "processing",
             auditId: project.id
         });
 

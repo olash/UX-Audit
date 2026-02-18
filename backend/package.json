@@ -10,6 +10,7 @@
         "postinstall": "npx playwright install chromium"
     },
     "dependencies": {
+        "@aws-sdk/client-ecs": "^3.992.0",
         "@google/generative-ai": "^0.21.0",
         "@supabase/supabase-js": "^2.39.0",
         "cors": "^2.8.5",
