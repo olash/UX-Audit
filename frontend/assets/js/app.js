@@ -137,7 +137,7 @@ const App = {
 
     // API Helper
     api: {
-        baseUrl: 'https://api.tryuxaudit.com',
+        baseUrl: window.location.hostname === 'localhost' ? 'http://localhost:4000' : '',
 
         async getAuthHeaders() {
             const { data, error } = await supabase.auth.getSession();

@@ -20,7 +20,17 @@ app.set('trust proxy', 1); // Required for ECS/ALB to correctly identify IPs
 // Webhooks must handle their own body parsing (stream/raw)
 app.use("/api/webhooks", webhooksRouter);
 
-app.use(cors());
+app.use(cors({
+    origin: [
+        'https://www.tryuxaudit.com',
+        'https://tryuxaudit.com',
+        'http://localhost:3000',
+        'http://localhost:5500'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
 app.use(express.json());
 
 // Security Layer 0: Helmet (Headers)
