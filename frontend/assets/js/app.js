@@ -137,7 +137,11 @@ const App = {
 
     // API Helper
     api: {
-        baseUrl: window.location.hostname === 'localhost' ? 'http://localhost:4000' : '',
+        get baseUrl() {
+            const hostname = window.location.hostname;
+            const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+            return isLocal ? 'http://localhost:4000' : '';
+        },
 
         async getAuthHeaders() {
             const { data, error } = await supabase.auth.getSession();
