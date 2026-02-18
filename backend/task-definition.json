@@ -11,7 +11,7 @@
     "containerDefinitions": [
         {
             "name": "audit-container",
-            "image": "275017714859.dkr.ecr.us-east-1.amazonaws.com/ux-audit-backend:v2",
+            "image": "275017714859.dkr.ecr.us-east-1.amazonaws.com/ux-audit-backend:v4",
             "cpu": 1024,
             "memory": 4096,
             "essential": true,
