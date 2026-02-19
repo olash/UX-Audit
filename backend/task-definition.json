@@ -11,13 +11,13 @@
     "containerDefinitions": [
         {
             "name": "audit-container",
-            "image": "275017714859.dkr.ecr.us-east-1.amazonaws.com/ux-audit-backend:v4",
+            "image": "275017714859.dkr.ecr.us-east-1.amazonaws.com/ux-audit-backend:v5",
             "cpu": 1024,
             "memory": 4096,
             "essential": true,
             "command": [
                 "node",
-                "worker.js"
+                "/app/worker.js"
             ],
             "logConfiguration": {
                 "logDriver": "awslogs",
