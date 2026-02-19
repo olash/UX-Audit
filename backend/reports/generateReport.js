@@ -1,10 +1,11 @@
 // 1. Imports
 import { chromium } from 'playwright-core';
-import path from 'path'; // Step 1: Import path correctly
+import path from 'path';
 import { supabase } from "../db/supabase.js";
 import { renderReportHTML } from './reportTemplate.js';
 import { DIMENSIONS } from '../ai/scoring.config.js';
 import fs from 'fs';
+import posthog from '../utils/posthog.js';
 
 // Helper to get logo base64
 function getLogoBase64() {
