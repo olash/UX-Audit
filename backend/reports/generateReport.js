@@ -5,7 +5,7 @@ import { supabase } from "../db/supabase.js";
 import { renderReportHTML } from './reportTemplate.js';
 import { DIMENSIONS } from '../ai/scoring.config.js';
 import fs from 'fs';
-import posthog from '../utils/posthog.js';
+import { posthog } from '../utils/posthog.js';
 import { sendAuditCompleteEmail } from '../utils/email.js';
 
 // Helper to get logo base64
