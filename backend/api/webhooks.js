@@ -187,23 +187,28 @@ router.post('/', verifySignature, async (req, res) => {
 });
 
 // Supabase Database Webhook for New Users (Fires after email verification)
-router.post('/new-user', express.json(), async (req, res) => {
+// Notice we removed the inline express.json() because it's handled at the top of the file
+router.post('/new-user', async (req, res) => {
     try {
         const payload = req.body;
+
+        // Log the exact payload so we can see it in Render's dashboard!
+        console.log("📨 Received Supabase Webhook:", JSON.stringify(payload));
+
         const newUser = payload?.record;
-        const oldUser = payload?.old_record;
 
-        // Check if this is an UPDATE event where the email JUST got confirmed
-        const justVerified = payload?.type === 'UPDATE' &&
-            newUser?.email_confirmed_at &&
-            !oldUser?.email_confirmed_at;
+        if (!newUser || !newUser.email) {
+            return res.status(400).send('No user data');
+        }
 
-        // Fallback: If email confirmation is disabled, trigger on INSERT instead
-        const isNewUnverifiedSignup = payload?.type === 'INSERT' && newUser?.email;
+        // We check if the email_confirmed_at field exists and has a timestamp
+        const isVerified = !!newUser.email_confirmed_at;
 
-        if ((justVerified || isNewUnverifiedSignup) && newUser?.email) {
+        if (isVerified) {
             console.log(`🎉 User verified: ${newUser.email}. Sending welcome email...`);
             await sendWelcomeEmail(newUser.email);
+        } else {
+            console.log(`⏳ User created but not verified yet: ${newUser.email}. Waiting...`);
         }
 
         res.status(200).send('OK');
