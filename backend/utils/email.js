@@ -23,3 +23,24 @@ export async function sendAuditCompleteEmail(toEmail, reportUrl) {
         console.error("❌ Failed to send email:", error);
     }
 }
+
+export async function sendWelcomeEmail(toEmail) {
+    try {
+        const data = await resend.emails.send({
+            from: 'UX Audit <onboarding@resend.dev>', // Update when you add a custom domain
+            to: [toEmail],
+            subject: 'Welcome to UX Audit! 🎉',
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+                    <h2>Welcome to UX Audit!</h2>
+                    <p>We're thrilled to have you on board.</p>
+                    <p>Ready to start improving your websites? You can now run your first AI-powered UX audit and generate actionable insights in seconds.</p>
+                    <a href="https://tryuxaudit.com/dashboard.html" style="display: inline-block; padding: 12px 24px; background-color: #000; color: #fff; text-decoration: none; border-radius: 6px; margin-top: 15px;">Go to Dashboard</a>
+                </div>
+            `,
+        });
+        console.log("✅ Welcome Email sent successfully:", data.id);
+    } catch (error) {
+        console.error("❌ Failed to send welcome email:", error);
+    }
+}

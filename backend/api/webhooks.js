@@ -2,6 +2,7 @@ import express from 'express';
 import { supabase } from '../db/supabase.js';
 import crypto from 'crypto';
 import { posthog } from '../utils/posthog.js';
+import { sendWelcomeEmail } from '../utils/email.js';
 
 const router = express.Router();
 
@@ -183,6 +184,28 @@ router.post('/', verifySignature, async (req, res) => {
     }
 
     res.json({ received: true });
+});
+
+// Supabase Database Webhook for New Users
+// express.json() is added inline so it can read the Supabase payload independently
+router.post('/new-user', express.json(), async (req, res) => {
+    try {
+        const payload = req.body;
+
+        // Supabase sends the new row data inside payload.record
+        const newUser = payload?.record;
+
+        // Ensure this is an INSERT event and the user has an email
+        if (payload?.type === 'INSERT' && newUser?.email) {
+            console.log(`🎉 New user signed up: ${newUser.email}. Sending welcome email...`);
+            await sendWelcomeEmail(newUser.email);
+        }
+
+        res.status(200).send('OK');
+    } catch (error) {
+        console.error('❌ Webhook Error:', error);
+        res.status(500).send('Error processing webhook');
+    }
 });
 
 export default router;
