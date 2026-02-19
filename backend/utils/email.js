@@ -6,7 +6,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 export async function sendAuditCompleteEmail(toEmail, reportUrl) {
     try {
         const data = await resend.emails.send({
-            from: 'UX Audit <onboarding@resend.dev>', // Change to custom domain later
+            from: 'UX Audit <hello@tryuxaudit.com>', // Change to custom domain later
             to: [toEmail],
             subject: 'Your UX Audit Report is Ready! 🎉',
             html: `
@@ -27,7 +27,7 @@ export async function sendAuditCompleteEmail(toEmail, reportUrl) {
 export async function sendWelcomeEmail(toEmail) {
     try {
         const data = await resend.emails.send({
-            from: 'UX Audit <onboarding@resend.dev>', // Update when you add a custom domain
+            from: 'UX Audit <hello@tryuxaudit.com>', // Update when you add a custom domain
             to: [toEmail],
             subject: 'Welcome to UX Audit! 🎉',
             html: `
