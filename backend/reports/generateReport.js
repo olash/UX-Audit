@@ -6,6 +6,7 @@ import { renderReportHTML } from './reportTemplate.js';
 import { DIMENSIONS } from '../ai/scoring.config.js';
 import fs from 'fs';
 import posthog from '../utils/posthog.js';
+import { sendAuditCompleteEmail } from '../utils/email.js';
 
 // Helper to get logo base64
 function getLogoBase64() {
@@ -154,6 +155,21 @@ export async function generateReport(projectId) {
             .eq('id', projectId);
 
         if (dbError) throw dbError;
+
+        // --- RESEND EMAIL NOTIFICATION ---
+        try {
+            console.log("Fetching user email to send report...");
+            const { data: userRecord, error: userError } = await supabase.auth.admin.getUserById(project.user_id);
+
+            if (userRecord?.user?.email) {
+                await sendAuditCompleteEmail(userRecord.user.email, publicUrl);
+            } else {
+                console.warn("Could not find user email for project:", projectId);
+            }
+        } catch (emailErr) {
+            console.error("Error in email pipeline:", emailErr);
+        }
+        // ----------------------------------
 
         // Track PDF Generation
         try {
