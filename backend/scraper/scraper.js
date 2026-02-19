@@ -1,6 +1,7 @@
 import { createProject } from "../db/createProject.js";
 import { crawlSite } from "./crawl.js";
 import { finalizeProject } from "../db/finalizeProject.js";
+import { generateReport } from "../reports/generateReport.js"; // <--- 1. NEW IMPORT
 import { supabase } from "../db/supabase.js";
 
 /**
@@ -36,8 +37,13 @@ export async function runScraper(startUrl, existingProjectId = null, pageLimit =
         // 2. Run Crawl
         const pagesScanned = await crawlSite(startUrl, projectId, pageLimit);
 
-        // 3. Finalize (Calc Score + Mark Complete)
+        // 3. Finalize (Calc Score)
+        console.log("🏁 Finalizing project:", projectId);
         await finalizeProject(projectId);
+
+        // 4. Generate PDF Report (Step 5/5) <--- NEW CRITICAL STEP
+        console.log("📄 Generating PDF Report...");
+        await generateReport(projectId);
 
         console.log("✅ Audit workflow completed.");
         return { projectId, pagesScanned };
