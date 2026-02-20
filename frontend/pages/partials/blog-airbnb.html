@@ -1,0 +1,183 @@
+<header class="bg-slate-50 border-b border-slate-200 pt-24 pb-16">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 mb-6">When Beautiful Design Creates
+            Usability Blind Spots: An Airbnb UX Teardown</h1>
+        <div class="flex items-center justify-center gap-4 text-slate-500 text-sm">
+            <span>By Abdurrahman Sheriff</span>
+            <span>•</span>
+            <span>7 min read</span>
+            <span>•</span>
+            <span>Feb 22, 2026</span>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <article class="prose prose-slate prose-blue prose-lg max-w-none text-slate-700 leading-relaxed">
+
+        <p class="text-xl text-slate-600 mb-8">Airbnb is often cited as the benchmark for design-led marketplace UI. Its
+            interface is calm, image-forward, and emotionally persuasive. It feels premium. It feels intentional. It
+            feels safe.</p>
+
+        <p>We used the <strong>UX Audit Starter Plan</strong> to scan 15 core pages of Airbnb's website to see what they
+            get right, and where they lose conversions.</p>
+
+        <div class="bg-slate-900 text-white rounded-xl p-8 my-8 text-center shadow-lg">
+            <h3 class="text-white text-2xl font-bold mt-0 mb-4">The Results</h3>
+            <div class="flex justify-center gap-8 md:gap-16">
+                <div>
+                    <span class="block text-4xl font-extrabold text-emerald-400">99</span>
+                    <span class="text-sm text-slate-400 uppercase tracking-wider font-semibold">Aesthetics</span>
+                </div>
+                <div>
+                    <span class="block text-4xl font-extrabold text-amber-400">83</span>
+                    <span class="text-sm text-slate-400 uppercase tracking-wider font-semibold">Usability</span>
+                </div>
+                <div>
+                    <span class="block text-4xl font-extrabold text-blue-400">92</span>
+                    <span class="text-sm text-slate-400 uppercase tracking-wider font-semibold">Overall</span>
+                </div>
+            </div>
+        </div>
+
+        <p>That 16-point gap tells a powerful story. This isn't about bad design. It's about how beautiful design, when
+            pushed too far toward minimalism, can quietly introduce usability blind spots.</p>
+        <p>Let's break it down.</p>
+
+        <hr class="my-12 border-slate-200">
+
+        <h2 class="text-3xl font-bold text-slate-900 mt-12 mb-6">The 99/100 Aesthetics Masterclass</h2>
+        <p>Airbnb's near-perfect aesthetic score isn't accidental. It's the result of obsessive system-level consistency
+            and emotional design clarity.</p>
+
+        <h3 class="text-xl font-bold text-slate-900 mt-8 mb-4">1) Image-First Layout with Controlled Visual Hierarchy
+        </h3>
+        <p>Airbnb's listing cards and hero sections use high-resolution imagery as the primary emotional driver. Text
+            overlays are restrained, spacing follows a strict modular rhythm, and UI elements float on soft shadows with
+            carefully controlled border-radius tokens.</p>
+
+        <div class="bg-slate-50 rounded-xl p-6 border border-slate-100 my-6">
+            <h4 class="font-bold text-slate-900 mb-3">Why this builds marketplace trust:</h4>
+            <ul class="space-y-2 list-disc list-inside">
+                <li><strong>Visual dominance reduces cognitive noise.</strong> Large imagery simplifies the scanning
+                    process and anchors attention.</li>
+                <li><strong>Consistent spacing</strong> and grid systems signal operational maturity.</li>
+                <li><strong>Minimal UI chrome</strong> keeps focus on the product (the stay), not the interface.</li>
+            </ul>
+        </div>
+
+        <h3 class="text-xl font-bold text-slate-900 mt-10 mb-4">2) Systematic Component Consistency Across Pages</h3>
+        <p>Across /homes, /experiences, and destination pages, the UI components remain structurally identical: card
+            grids, badge placement, search modules, and spacing intervals follow predictable patterns.</p>
+
+        <figure class="my-8">
+            <div
+                class="aspect-video bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 font-medium shadow-md">
+                [Insert Screenshot of Airbnb Card Grid Consistency]
+            </div>
+        </figure>
+
+        <div class="bg-slate-50 rounded-xl p-6 border border-slate-100 my-6">
+            <h4 class="font-bold text-slate-900 mb-3">Why this matters psychologically:</h4>
+            <ul class="space-y-2 list-disc list-inside">
+                <li><strong>Consistency strengthens recognition</strong> over recall.</li>
+                <li><strong>Reusable visual patterns</strong> reduce cognitive switching costs.</li>
+                <li><strong>Stable component behavior</strong> increases perceived reliability.</li>
+            </ul>
+        </div>
+
+        <hr class="my-12 border-slate-200">
+
+        <h2 class="text-3xl font-bold text-slate-900 mt-12 mb-6">The 83/100 Usability Trap</h2>
+        <p>Here's where the tension appears. Airbnb's interface is visually pristine — but several minimalistic choices
+            introduce clarity and task-completion friction.</p>
+
+        <h3 class="text-xl font-bold text-slate-900 mt-8 mb-4">1) Ambiguous Interaction Elements</h3>
+        <p>The audit flags "Ambiguous Interaction Elements" as critical. Generic grey placeholders and subtle
+            interaction cues make it unclear what's clickable and what's informational.</p>
+
+        <figure class="my-8">
+            <div
+                class="aspect-video bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 font-medium shadow-md">
+                [Insert Screenshot of subtle hover interactions or grey placeholders]
+            </div>
+        </figure>
+
+        <div class="bg-amber-50 rounded-xl p-6 border border-amber-100 my-6">
+            <h4 class="font-bold text-amber-900 mb-3">Why this hurts conversions:</h4>
+            <ul class="space-y-2 list-disc list-inside text-amber-900">
+                <li><strong>Ambiguity increases cognitive load.</strong> Users hesitate when affordances are unclear.
+                </li>
+                <li><strong>Hover-dependent interactions</strong> fail on touch devices.</li>
+                <li><strong>Minimalism becomes problematic</strong> when it weakens signifiers — a violation of core
+                    usability heuristics.</li>
+            </ul>
+        </div>
+
+        <h3 class="text-xl font-bold text-slate-900 mt-10 mb-4">2) Lack of Concrete Content and Filtering Clarity</h3>
+        <p>On certain views, placeholder structures and truncated listing descriptions prevent users from fully
+            understanding what differentiates options. Listings sometimes lack visible price information initially, and
+            filtering options are not immediately prominent.</p>
+
+        <div class="bg-amber-50 rounded-xl p-6 border border-amber-100 my-6">
+            <h4 class="font-bold text-amber-900 mb-3">Why this matters:</h4>
+            <p class="text-amber-900 text-sm mb-0">Incomplete information increases decision friction. Extra clicks
+                increase abandonment probability. When users cannot immediately evaluate price, guest suitability, or
+                unique value, they enter a comparison loop instead of a booking loop.</p>
+        </div>
+
+        <hr class="my-12 border-slate-200">
+
+        <h2 class="text-3xl font-bold text-slate-900 mt-12 mb-6">The Accessibility Blind Spot</h2>
+        <p>Airbnb scores 88/100 in Accessibility — strong, but not elite. The recurring issue: reliance on aesthetic
+            light greys.</p>
+
+        <figure class="my-8">
+            <div
+                class="aspect-video bg-slate-100 rounded-xl border border-slate-200 flex items-center justify-center text-slate-400 font-medium shadow-md">
+                [Insert Screenshot of Low Contrast Text / Footers]
+            </div>
+        </figure>
+
+        <div class="bg-red-50 rounded-xl p-6 border border-red-100 my-6">
+            <h4 class="font-bold text-red-900 mb-3">The Silent Conversion Killer:</h4>
+            <p class="text-red-800 text-sm mb-0">Many of these combinations fall below the WCAG 4.5:1 contrast ratio
+                required for AA compliance. Low contrast increases reading strain and lowers scanning velocity.
+                Designers often choose desaturated greys to preserve aesthetic softness, but aesthetic lightness should
+                never override functional legibility.</p>
+        </div>
+
+        <hr class="my-12 border-slate-200">
+
+        <h2 class="text-3xl font-bold text-slate-900 mt-12 mb-6">The Final Verdict</h2>
+        <p>Airbnb earns a 92 overall score — a world-class result. But the 99 in Aesthetics versus 83 in Usability
+            reveals something deeper: <strong>Beauty can mask friction.</strong></p>
+
+        <p>Design maturity isn't measured by how clean your UI looks. It's measured by how little cognitive effort your
+            users expend to complete their goal.</p>
+
+    </article>
+
+    <div class="mt-16 bg-slate-50 rounded-2xl border border-slate-200 p-8 sm:p-10 text-center relative overflow-hidden">
+        <div
+            class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-blue-50/50 to-transparent pointer-events-none">
+        </div>
+
+        <div class="relative z-10 max-w-2xl mx-auto">
+            <h3 class="text-2xl font-bold text-slate-900 mb-3">Want the full picture?</h3>
+            <p class="text-slate-600 mb-8 text-lg">We only covered 3 pages in this teardown. Enter your email below to
+                download the full <strong>15-page Airbnb UX Audit PDF</strong> and see exactly how their other 12 pages
+                scored.</p>
+
+            <form id="lead-magnet-form" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                <input type="email" id="lead-email" required placeholder="Enter your work email"
+                    class="flex-1 px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition-all">
+                <button type="submit" id="lead-submit-btn"
+                    class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap">Download
+                    PDF</button>
+            </form>
+            <p id="lead-success-msg" class="hidden text-sm text-emerald-600 font-medium mt-4">✅ Sent! Check your inbox
+                for the PDF.</p>
+        </div>
+    </div>
+</main>

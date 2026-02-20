@@ -54,6 +54,9 @@ export const sendLeadMagnetEmail = async (email, source) => {
         if (source === 'stripe_teardown_pdf') {
             companyName = 'Stripe';
             pdfUrl = 'https://www.tryuxaudit.com/assets/pdfs/stripe-15-page-audit.pdf';
+        } else if (source === 'airbnb_teardown_pdf') {
+            companyName = 'Airbnb';
+            pdfUrl = 'https://[YOUR_PROJECT_REF].supabase.co/storage/v1/object/public/lead-magnets/AirBnB.pdf';
         } else {
             console.log(`Unknown lead source: ${source}`);
             return;
