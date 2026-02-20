@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stripe UX Teardown | UX Audit</title>
+    <link href="/assets/css/tailwind.css" rel="stylesheet">
+</head>
+
+<body class="bg-white text-slate-900 font-sans antialiased">
+
+    <div id="navbar-container"></div>
+
+    <header class="bg-slate-50 border-b border-slate-200 pt-24 pb-16">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-slate-900 mb-6">Stripe UX Teardown: 3
+                World-Class Patterns (and 3 Conversion Leaks)</h1>
+            <div class="flex items-center justify-center gap-4 text-slate-500 text-sm">
+                <span>By Abdurrahman Sheriff</span>
+                <span>•</span>
+                <span>8 min read</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <article class="prose prose-slate prose-blue max-w-none text-lg leading-relaxed">
+
+            <p>Stripe is widely considered the gold standard of fintech UX. Clean. Confident. Systematic. It feels
+                engineered rather than marketed — and that distinction matters when you're asking users to trust you
+                with money.</p>
+
+            <p>We used the <strong>UX Audit Starter Plan</strong> to scan 15 core pages of Stripe's website to see what
+                they get right, and where they lose conversions.</p>
+
+            <p>The result? A <strong>94 overall UX score</strong> — but even world-class interfaces have friction hiding
+                in plain sight.</p>
+
+            <hr class="my-8 border-slate-200">
+
+            <h2 class="text-3xl font-bold mt-12 mb-6">The Good</h2>
+
+            <h3 class="text-xl font-bold mt-8 mb-4">1) Elite Visual Hierarchy Built on Strict Spatial Discipline</h3>
+            <p>Stripe's layouts feel effortless because they're mathematically disciplined...</p>
+
+            <figure class="my-8">
+                <img src="/assets/images/blog/stripe-hero-markup.png" alt="Stripe Hero UI"
+                    class="rounded-xl border border-slate-200 shadow-md w-full">
+                <figcaption class="text-center text-sm text-slate-500 mt-3">Notice the strict 8px/16px baseline grid
+                    guiding the eye.</figcaption>
+            </figure>
+
+        </article>
+
+        <div
+            class="mt-16 bg-slate-50 rounded-2xl border border-slate-200 p-8 sm:p-10 text-center relative overflow-hidden">
+            <div class="relative z-10 max-w-2xl mx-auto">
+                <h3 class="text-2xl font-bold text-slate-900 mb-3">Want the full picture?</h3>
+                <p class="text-slate-600 mb-8 text-lg">We only covered 3 pages in this teardown. Enter your email below
+                    to download the full <strong>15-page Stripe UX Audit PDF</strong> and see exactly how their other 12
+                    pages scored.</p>
+
+                <form id="lead-magnet-form" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                    <input type="email" id="lead-email" required placeholder="Enter your work email"
+                        class="flex-1 px-4 py-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-blue-600 focus:border-blue-600 outline-none transition-all">
+                    <button type="submit" id="lead-submit-btn"
+                        class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-sm">Download
+                        PDF</button>
+                </form>
+                <p id="lead-success-msg" class="hidden text-sm text-green-600 font-medium mt-4">✅ Sent! Check your inbox
+                    for the PDF.</p>
+            </div>
+        </div>
+    </main>
+
+    <div id="footer-container"></div>
+    <script type="module" src="/assets/js/layout.js"></script>
+    <script type="module" src="/assets/js/pages/blog-lead.js"></script>
+</body>
+
+</html>
