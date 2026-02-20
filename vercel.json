@@ -4,10 +4,10 @@
     "outputDirectory": "frontend",
     "cleanUrls": true,
     "trailingSlash": false,
-    "routes": [
+    "rewrites": [
         {
-            "src": "/api/(.*)",
-            "dest": "https://ux-audit.onrender.com/api/$1"
+            "source": "/api/(.*)",
+            "destination": "https://ux-audit.onrender.com/api/$1"
         }
     ]
 }
