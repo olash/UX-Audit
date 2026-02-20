@@ -1,0 +1,162 @@
+<header class="bg-slate-900 border-b border-slate-800 pt-24 pb-16">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <h1 class="text-4xl sm:text-5xl font-extrabold tracking-tight text-white mb-6">The Dark Mode Tax: When Cinematic
+            UI Sacrifices Accessibility</h1>
+        <div class="flex items-center justify-center gap-4 text-slate-400 text-sm">
+            <span>By Abdurrahman Sheriff</span>
+            <span>•</span>
+            <span>6 min read</span>
+            <span>•</span>
+            <span>Feb 24, 2026</span>
+        </div>
+    </div>
+</header>
+
+<main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <article class="prose prose-slate prose-red prose-lg max-w-none text-slate-700 leading-relaxed">
+
+        <p class="text-xl text-slate-600 mb-8">Netflix has mastered the art of immersive UI. From auto-playing hero
+            trailers to edge-to-edge poster grids, the experience feels less like a website and more like a digital
+            cinema.</p>
+
+        <p>We used the <strong>UX Audit Starter Plan</strong> to scan 15 core pages of Netflix's website to see what
+            they get right, and where they lose conversions.</p>
+
+        <div class="bg-slate-50 rounded-xl border border-slate-200 p-8 my-8 text-center shadow-sm">
+            <h3 class="text-slate-900 text-2xl font-bold mt-0 mb-4">The Results</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div>
+                    <span class="block text-4xl font-extrabold text-emerald-500">100</span>
+                    <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Aesthetics</span>
+                </div>
+                <div>
+                    <span class="block text-4xl font-extrabold text-blue-500">99</span>
+                    <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Navigation</span>
+                </div>
+                <div>
+                    <span class="block text-4xl font-extrabold text-red-500">86</span>
+                    <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Accessibility</span>
+                </div>
+                <div>
+                    <span class="block text-4xl font-extrabold text-slate-900">94</span>
+                    <span class="text-xs text-slate-500 uppercase tracking-wider font-semibold">Overall</span>
+                </div>
+            </div>
+        </div>
+
+        <p>That drop from cinematic perfection to accessibility friction reveals something every product team should
+            understand: <strong>Dark mode, when executed purely for mood, comes with a usability tax.</strong></p>
+
+        <hr class="my-12 border-slate-200">
+
+        <h2 class="text-3xl font-bold text-slate-900 mt-12 mb-6">The 100/100 Cinematic Masterclass</h2>
+        <p>Netflix's perfect Aesthetics score is not accidental. It's engineered. Two patterns stand out as
+            conversion-grade design decisions.</p>
+
+        <h3 class="text-xl font-bold text-slate-900 mt-8 mb-4">1) Edge-to-Edge Visual Hierarchy That Reduces Decision
+            Friction</h3>
+        <p>Across /ng, /browse, and title pages, Netflix relies on high-contrast hero imagery layered with minimal UI
+            chrome.</p>
+
+        <figure class="my-8">
+            <div
+                class="aspect-video bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-center text-slate-500 font-medium shadow-md">
+                [Insert Screenshot of Netflix Hero Section]
+            </div>
+        </figure>
+
+        <div class="bg-slate-50 rounded-xl p-6 border border-slate-100 my-6">
+            <h4 class="font-bold text-slate-900 mb-3">Why this feels effortless:</h4>
+            <ul class="space-y-2 list-disc list-inside">
+                <li><strong>Visual hierarchy is unambiguous.</strong> The eye moves from poster &rarr; title &rarr; CTA
+                    without friction.</li>
+                <li><strong>Cognitive load is minimized.</strong> Posters do the storytelling; the interface gets out of
+                    the way.</li>
+                <li><strong>Red as a primary accent</strong> creates immediate affordance clarity.</li>
+            </ul>
+        </div>
+
+        <h3 class="text-xl font-bold text-slate-900 mt-10 mb-4">2) Near-Flawless Horizontal Navigation Patterns (99/100)
+        </h3>
+        <p>Netflix's carousel system dominates the browsing experience. Despite the density, navigation remains
+            intuitive. Consistent interaction patterns reduce the learning curve, and poster scaling on hover reinforces
+            affordances.</p>
+        <p>Navigation scored 99/100 for a reason. Users rarely feel lost. They feel immersed. And immersion increases
+            session duration — which increases retention.</p>
+
+        <hr class="my-12 border-slate-200">
+
+        <h2 class="text-3xl font-bold text-slate-900 mt-12 mb-6">The 86/100 Accessibility Tax</h2>
+        <p>Here's where cinematic dark mode becomes expensive. The audit flags multiple high-severity contrast failures,
+            particularly in footer areas, secondary text, and input placeholders.</p>
+
+        <figure class="my-8">
+            <div
+                class="aspect-video bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-center text-slate-500 font-medium shadow-md">
+                [Insert Screenshot of Low Contrast Secondary Text / Footer]
+            </div>
+        </figure>
+
+        <div class="bg-red-50 rounded-xl p-6 border border-red-100 my-6">
+            <h4 class="font-bold text-red-900 mb-3">The WCAG Failure:</h4>
+            <p class="text-red-900 text-sm mb-0">The pattern is clear: aesthetic dark grey text on black backgrounds.
+                This likely fails the 4.5:1 contrast ratio requirement for AA compliance. Low contrast increases visual
+                strain, and dark-on-dark combinations fail users in bright lighting conditions.</p>
+        </div>
+
+        <p>Secondary text like <em>"Endless entertainment starting at $7.99"</em> or footer links such as
+            <em>"Privacy"</em> are visually subtle, but functionally critical. When users can't comfortably read support
+            text, trust erodes.</p>
+
+        <hr class="my-12 border-slate-200">
+
+        <h2 class="text-3xl font-bold text-slate-900 mt-12 mb-6">The Cognitive Overload Trap</h2>
+        <p>Another key issue flagged in the report: <strong>Dense Footer Navigation Structure (MEDIUM)</strong>.
+            Netflix's footer presents a large, flat multi-column link grid. It's comprehensive — but cognitively heavy.
+        </p>
+
+        <div class="bg-amber-50 rounded-xl p-6 border border-amber-100 my-6">
+            <h4 class="font-bold text-amber-900 mb-3">How to fix it:</h4>
+            <ul class="space-y-2 list-disc list-inside text-amber-900">
+                <li>Introduce clear sectional groupings with typographic contrast.</li>
+                <li>Use visual separators or spacing tokens to create hierarchy.</li>
+                <li>Prioritize the top 5 support paths and collapse the rest behind progressive disclosure.</li>
+            </ul>
+        </div>
+        <p>Navigation density without hierarchy feels like a database — not a guided experience.</p>
+
+        <hr class="my-12 border-slate-200">
+
+        <h2 class="text-3xl font-bold text-slate-900 mt-12 mb-6">The Final Verdict</h2>
+        <p>Netflix earns a 94 Overall Score — an elite result. Its 100/100 Aesthetics and 99/100 Navigation prove that
+            immersive, cinematic interfaces can dramatically reduce friction and drive engagement.</p>
+        <p>But the 86 in Accessibility reveals the hidden cost of dark-first design systems. Mood should never override
+            WCAG contrast guidelines. <strong>If dark mode sacrifices clarity, it's not premium — it's
+                exclusionary.</strong></p>
+
+    </article>
+
+    <div
+        class="mt-16 bg-slate-900 rounded-2xl border border-slate-800 p-8 sm:p-10 text-center relative overflow-hidden shadow-2xl">
+        <div
+            class="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-gradient-to-b from-red-900/20 to-transparent pointer-events-none">
+        </div>
+
+        <div class="relative z-10 max-w-2xl mx-auto">
+            <h3 class="text-2xl font-bold text-white mb-3">Want the full picture?</h3>
+            <p class="text-slate-300 mb-8 text-lg">We only covered 3 pages in this teardown. Enter your email below to
+                download the full <strong>15-page Netflix UX Audit PDF</strong> and see exactly how their other 12 pages
+                scored.</p>
+
+            <form id="lead-magnet-form" class="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+                <input type="email" id="lead-email" required placeholder="Enter your work email"
+                    class="flex-1 px-4 py-3 rounded-lg border border-slate-700 bg-slate-800 text-white placeholder-slate-400 focus:ring-2 focus:ring-red-600 focus:border-red-600 outline-none transition-all">
+                <button type="submit" id="lead-submit-btn"
+                    class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap">Download
+                    PDF</button>
+            </form>
+            <p id="lead-success-msg" class="hidden text-sm text-emerald-400 font-medium mt-4">✅ Sent! Check your inbox
+                for the PDF.</p>
+        </div>
+    </div>
+</main>

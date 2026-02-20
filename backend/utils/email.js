@@ -57,6 +57,9 @@ export const sendLeadMagnetEmail = async (email, source) => {
         } else if (source === 'airbnb_teardown_pdf') {
             companyName = 'Airbnb';
             pdfUrl = 'https://www.tryuxaudit.com/assets/pdfs/AirBnB.pdf';
+        } else if (source === 'netflix_teardown_pdf') {
+            companyName = 'Netflix';
+            pdfUrl = 'https://www.tryuxaudit.com/assets/pdfs/Netflix.pdf';
         } else {
             console.log(`Unknown lead source: ${source}`);
             return;
