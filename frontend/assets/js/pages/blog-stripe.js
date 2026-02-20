@@ -4,7 +4,7 @@ import { supabase } from '../supabase.js';
 document.addEventListener('DOMContentLoaded', async () => {
     await App.init();
     await Layout.loadPublic();
-    await Layout.loadContent('../../pages/partials/blog-stripe.html');
+    await Layout.loadContent('/pages/partials/blog-stripe.html');
 
     // Lead magnet form logic
     const form = document.getElementById('lead-magnet-form');
