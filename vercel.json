@@ -1,20 +1,10 @@
 {
-    "framework": null,
-    "buildCommand": null,
-    "outputDirectory": "frontend",
     "cleanUrls": true,
     "trailingSlash": false,
-    "routes": [
+    "rewrites": [
         {
-            "src": "/api/(.*)",
-            "dest": "https://ux-audit.onrender.com/api/$1"
-        },
-        {
-            "handle": "filesystem"
-        },
-        {
-            "src": "/(.*)",
-            "dest": "/index.html"
+            "source": "/api/(.*)",
+            "destination": "https://ux-audit.onrender.com/api/$1"
         }
     ]
 }
