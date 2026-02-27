@@ -95,3 +95,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 });
+
+// --- GOOGLE LOGIN CALLBACK ---
+// Needs to be accessible globally for Google Identity Services
+window.handleGoogleLogin = async (response) => {
+    try {
+        // We use the supabase client directly for the ID token sign-in
+        const { data, error } = await window.supabase.auth.signInWithIdToken({
+            provider: 'google',
+            token: response.credential,
+        });
+
+        if (error) throw error;
+
+        window.App.toast('success', 'Logged in with Google successfully');
+
+        // Wait a short moment then redirect to dashboard
+        setTimeout(() => {
+            window.location.href = '/pages/Dashboard_Homepage.html';
+        }, 500);
+
+    } catch (err) {
+        console.error('Google Auth Error:', err);
+        if (window.App && window.App.toast) {
+            window.App.toast('error', err.message || 'Google Login failed');
+        } else {
+            alert(err.message || 'Google Login failed');
+        }
+    }
+};
