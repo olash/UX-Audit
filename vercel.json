@@ -4,6 +4,10 @@
     "outputDirectory": "frontend",
     "routes": [
         {
+            "src": "/api/(.*)",
+            "dest": "https://ux-audit.onrender.com/api/$1"
+        },
+        {
             "handle": "filesystem"
         },
         {

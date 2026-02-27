@@ -3,24 +3,49 @@ import fs from "fs";
 import { calculateScores } from "./scoreCalculator.js";
 
 export async function analyzeScreenshot(imagePath) {
-    if (!process.env.GEMINI_API_KEY) {
-        throw new Error("GEMINI_API_KEY is not set");
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error("GEMINI_API_KEY is not set");
+  }
+
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+  const model = genAI.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      responseMimeType: "application/json"
     }
+  });
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
-        model: "gemini-1.5-flash", // Updated to 1.5 flash for better performance/cost
-        generationConfig: {
-            responseMimeType: "application/json"
-        }
-    });
+  const imageBase64 = fs.readFileSync(imagePath).toString("base64");
 
-    const imageBase64 = fs.readFileSync(imagePath).toString("base64");
+  const SYSTEM_PROMPT = `
+You are an expert UX Auditor analyzing a website screenshot.
+Goal: Identify usability, accessibility, and aesthetic issues.
 
-    const result = await model.generateContent([
-        {
-            text: `
-You are an expert UX/UI auditor. Analyze this webpage screenshot for a professional design audit.
+SECURITY RULES:
+1. Do NOT include any Personally Identifiable Information (PII) or sensitive user data visible in the screenshot (e.g., emails, phone numbers).
+2. Do NOT infer private user details.
+3. Return ONLY strict JSON.
+
+Format:
+{
+  "scores": { "usability": 0-100, "navigation": 0-100, "clarity": 0-100, "accessibility": 0-100, "aesthetics": 0-100 },
+  "issues": [
+    {
+      "title": "...",
+      "description": "...",
+      "severity": "High",
+      "category": "Usability"
+    }
+  ],
+  "summary": "A 2-3 sentence executive summary of the page's UX.",
+  "positive_highlights": ["List of 2-3 things done well"]
+}
+`;
+
+  const result = await model.generateContent([
+    {
+      text: `${SYSTEM_PROMPT}
 
 Evaluate the design based on these specific dimensions:
 1. Usability (Ease of use, interaction patterns)
@@ -48,32 +73,39 @@ Return the result as valid JSON:
   "summary": "A 2-3 sentence executive summary of the page's UX.",
   "positive_highlights": ["List of 2-3 things done well"]
 }
+
+IMPORTANT:
+Return ONLY valid JSON.
+Do not include markdown.
+Do not include explanations.
+Do not include trailing commas.
+The response must be parseable by JSON.parse().
 `
-        },
-        {
-            inlineData: {
-                mimeType: "image/png",
-                data: imageBase64
-            }
-        }
-    ]);
-
-    const responseText = result.response.text();
-    let aiData;
-
-    try {
-        aiData = JSON.parse(responseText);
-    } catch (e) {
-        console.error("Failed to parse Gemini JSON:", responseText);
-        return null;
+    },
+    {
+      inlineData: {
+        mimeType: "image/png",
+        data: imageBase64
+      }
     }
+  ]);
 
-    // Calculate scores based on the issues found
-    const { breakdown, overall } = calculateScores(aiData.issues || []);
+  const responseText = result.response.text();
+  let aiData;
 
-    return {
-        ...aiData,
-        scores: breakdown, // Detailed breakdown
-        score: overall     // Single integer score (0-100)
-    };
+  try {
+    aiData = JSON.parse(responseText);
+  } catch (e) {
+    console.error("Failed to parse Gemini JSON:", responseText);
+    return null;
+  }
+
+  // Calculate scores based on the issues found
+  const { breakdown, overall } = calculateScores(aiData.issues || []);
+
+  return {
+    ...aiData,
+    scores: breakdown, // Detailed breakdown
+    score: overall     // Single integer score (0-100)
+  };
 }

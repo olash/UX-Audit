@@ -1,5 +1,8 @@
 import { supabase } from "./supabase.js";
 import { DIMENSIONS } from "../ai/scoring.config.js";
+import { generateReport } from "../reports/generateReport.js";
+import { PLAN_ENTITLEMENTS } from "../config/pricing.js";
+import { posthog } from '../utils/posthog.js';
 
 /**
  * Aggregates scores from all pages and finalizes the project.
@@ -10,6 +13,15 @@ export async function finalizeProject(projectId) {
 
     try {
         console.log(`🏁 Finalizing project: ${projectId}`);
+
+        // Update Status: Compiling (Step 3/5)
+        await supabase.from('projects')
+            .update({
+                audit_status: 'compiling',
+                audit_step: 3,
+                audit_message: 'Compiling insights and scores'
+            })
+            .eq('id', projectId);
 
         // 1. Fetch analysis scores for all pages in this project
         // Joining pages -> ai_reviews using the foreign key relationship
@@ -87,15 +99,111 @@ export async function finalizeProject(projectId) {
         const { error: updateError } = await supabase
             .from('projects')
             .update({
-                status: 'completed',
                 score: finalOverall,
                 score_breakdown: finalBreakdown,
-                completed_at: new Date().toISOString()
+                completed_at: new Date().toISOString(),
+                status: 'completed'
             })
             .eq('id', projectId);
 
         if (updateError) throw updateError;
         console.log("✅ Project successfully finalized.");
+
+        // 4. Trigger Async PDF Generation (CONDITIONAL)
+        // Check if user is entitled to PDF generation to save compute
+        const { data: projectUser } = await supabase
+            .from('projects')
+            .select('user_id, metadata, progress_label, target_url, payment_source') // Fetch metadata & needed fields
+            .eq('id', projectId)
+            .single();
+
+        if (projectUser) {
+            // Track Audit Completed
+            if (posthog) {
+                // Determine usage type for properties
+                const usageType = projectUser.payment_source ||
+                    projectUser.metadata?.usage_type ||
+                    (projectUser.progress_label?.includes('[credits]') ? 'credits' : 'monthly');
+
+                posthog.capture({
+                    distinctId: projectUser.user_id,
+                    event: 'audit_completed',
+                    properties: {
+                        score: finalOverall,
+                        pages_scanned: isNaN(count) ? 0 : count,
+                        url: projectUser.target_url,
+                        payment_source: usageType
+                    }
+                });
+            }
+
+            // --- CREDIT DEDUCTION LOGIC ---
+            // Check if this project was flagged to use credits
+            // Enterprise Polish: Check payment_source column first
+            const usageType = projectUser.payment_source ||
+                projectUser.metadata?.usage_type ||
+                (projectUser.progress_label?.includes('[credits]') ? 'credits' : 'monthly');
+
+            if (usageType === 'credits') {
+                const pagesDeducted = pages.length; // 1 credit = 1 page
+                if (pagesDeducted > 0) {
+                    console.log(`💳 Deducting ${pagesDeducted} credits for Project ${projectId} (User ${projectUser.user_id})`);
+
+                    // Atomic Deduction via RPC
+                    const { error: creditError } = await supabase.rpc('increment_credits', {
+                        uid: projectUser.user_id,
+                        amount: -pagesDeducted
+                    });
+
+                    if (creditError) {
+                        console.error("❌ Failed to deduct credits:", creditError);
+                    } else {
+                        // Log Transaction
+                        await supabase.from('credit_transactions').insert({
+                            user_id: projectUser.user_id,
+                            amount: -pagesDeducted,
+                            source: 'audit',
+                            description: `Audit: ${projectId} (${pagesDeducted} pages)`
+                        });
+
+                        // Track Credit Deduction in PostHog
+                        if (posthog) {
+                            posthog.capture({
+                                distinctId: projectUser.user_id,
+                                event: 'credits_deducted',
+                                properties: {
+                                    amount: pagesDeducted,
+                                    audit_id: projectId
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+            // ------------------------------
+
+            // --- ENTERPRISE NOTIFICATION ---
+            await supabase.from('notifications').insert({
+                user_id: projectUser.user_id,
+                type: 'audit_completed',
+                title: 'Audit Completed',
+                meta: {
+                    website: projectUser.target_url, // Assuming we fetched it? Wait, we need to fetch target_url or pass it.
+                    // projectUser only has user_id, metadata... we need more fields.
+                    // We can assume we have it or fetch it.
+                    score: finalOverall,
+                    completed_at: new Date().toISOString()
+                }
+            });
+            // ------------------------------
+
+            // PDF Generation: Enabled for ALL users (Requested Change)
+            // Using setImmediate to not block the current stack
+            setImmediate(() => {
+                console.log("🚀 Triggering background PDF generation...");
+                generateReport(projectId).catch(err => console.error("Background PDF Gen Failed:", err));
+            });
+        }
 
     } catch (err) {
         console.error("❌ Failed to finalize project:", err.message);

@@ -13,16 +13,6 @@
                 <span class="iconify text-slate-400" data-icon="lucide:credit-card" data-width="14"></span>
                 Billing & Plans
             </a>
-            <a href="#"
-                class="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-md transition-colors">
-                <span class="iconify text-slate-400" data-icon="lucide:users" data-width="14"></span>
-                Team Members
-            </a>
-            <a href="#"
-                class="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-md transition-colors">
-                <span class="iconify text-slate-400" data-icon="lucide:bell" data-width="14"></span>
-                Notifications
-            </a>
         </nav>
     </aside>
 
@@ -99,7 +89,7 @@
         </div>
 
         <!-- Section: Plan & Billing -->
-        <div>
+        <div id="subscription-section">
             <div class="mb-4 flex items-center justify-between">
                 <div>
                     <h2 class="text-base font-medium text-slate-900 tracking-tight">Subscription</h2>
@@ -110,83 +100,121 @@
 
             <div class="bg-white border border-slate-200 rounded-lg shadow-xs overflow-hidden">
                 <div class="p-6">
-                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
-                        <div>
-                            <div class="flex items-center gap-2 mb-2">
-                                <h3 class="text-sm font-medium text-slate-900">Personal Team</h3>
-                                <span
-                                    class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
-                                    Free Plan
-                                </span>
-                            </div>
-                            <p class="text-xs text-slate-500 max-w-sm mb-4">
-                                You are currently on the free tier. Upgrade to unlock more audits, team members,
-                                and advanced reporting.
-                            </p>
-
-                            <!-- Usage Bar -->
-                            <div class="mb-1">
-                                <div class="flex justify-between text-[10px] font-medium text-slate-600 mb-1.5">
-                                    <span>Audits Used</span>
-                                    <span id="stat-usage-text">-- / 50</span>
+                    <div>
+                        <div class="flex items-center gap-3 mb-4">
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
+                                    Current Plan</p>
+                                <div class="flex items-center gap-3">
+                                    <h3 class="text-xl font-semibold text-slate-900" id="plan-name">Free</h3>
+                                    <span id="plan-badge"
+                                        class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                        Active
+                                    </span>
                                 </div>
-                                <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            </div>
+                        </div>
+
+                        <p class="text-xs text-slate-500 max-w-sm mb-6" id="plan-description">
+                            You are currently on the free tier. Upgrade to unlock more power.
+                        </p>
+
+                        <!-- Usage Stats Grid -->
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div class="bg-slate-50 p-3 rounded border border-slate-100">
+                                <p class="text-[10px] text-slate-500 font-medium mb-1">Audits / Month</p>
+                                <div class="flex items-end gap-1">
+                                    <span id="stat-usage-text" class="text-lg font-bold text-slate-900">--</span>
+                                    <span class="text-xs text-slate-400 mb-0.5" id="stat-usage-limit">/ --</span>
+                                </div>
+                                <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mt-2">
                                     <div id="stat-usage-bar"
                                         class="h-full bg-slate-900 w-[0%] rounded-full transition-all duration-1000">
                                     </div>
                                 </div>
-                                <p class="text-[10px] text-slate-400 mt-1.5">Resets on Nov 1, 2023</p>
+                            </div>
+
+                            <div class="bg-slate-50 p-3 rounded border border-slate-100">
+                                <p class="text-[10px] text-slate-500 font-medium mb-1">Pages per Audit</p>
+                                <div class="flex items-end gap-1">
+                                    <span id="stat-pages-limit" class="text-lg font-bold text-slate-900">3</span>
+                                    <span class="text-xs text-slate-400 mb-0.5">pages</span>
+                                </div>
+                                <p class="text-[10px] text-slate-400 mt-2">Max pages per scan</p>
                             </div>
                         </div>
 
-                        <div class="flex flex-col gap-2 min-w-[140px]">
-                            <button onclick="window.location.href='Pricing.html'"
-                                class="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium px-4 py-2 rounded-md shadow-sm transition-colors">
-                                <span class="iconify" data-icon="lucide:zap" data-width="14"></span>
-                                Upgrade Plan
-                            </button>
-                            <button onclick="window.location.href='Pricing.html'"
-                                class="w-full inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium px-4 py-2 rounded-md shadow-sm transition-colors">
-                                Manage Billing
-                            </button>
+                        <!-- Credits Row -->
+                        <div
+                            class="flex items-center justify-between text-xs bg-white p-3 rounded border border-slate-200 shadow-sm mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="iconify text-slate-400" data-icon="lucide:coins" data-width="14"></span>
+                                <span class="text-slate-600 font-medium">Extra Credits Balance</span>
+                            </div>
+                            <span id="credits-balance" class="text-slate-900 font-bold text-sm">0</span>
                         </div>
-                    </div>
-                </div>
+                        <p class="text-[10px] text-slate-400 mb-6">Credits never expire and are used when monthly limits
+                            are reached.</p>
 
-                <!-- Plan Features Grid -->
-                <div class="border-t border-slate-100 bg-slate-50/30 px-6 py-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="flex items-start gap-2">
-                        <span class="iconify text-emerald-500 mt-0.5" data-icon="lucide:check-circle-2"
-                            data-width="14"></span>
-                        <span class="text-xs text-slate-600">50 Audits / mo</span>
                     </div>
-                    <div class="flex items-start gap-2">
-                        <span class="iconify text-emerald-500 mt-0.5" data-icon="lucide:check-circle-2"
-                            data-width="14"></span>
-                        <span class="text-xs text-slate-600">Basic Analytics</span>
-                    </div>
-                    <div class="flex items-start gap-2">
-                        <span class="iconify text-slate-300 mt-0.5" data-icon="lucide:x-circle" data-width="14"></span>
-                        <span class="text-xs text-slate-400">Team Collaboration</span>
+
+                    <div class="flex flex-col gap-3 min-w-[160px]">
+                        <button id="upgrade-btn" onclick="window.location.href='Pricing.html'"
+                            class="w-full inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-4 py-2.5 rounded-md shadow-sm transition-colors">
+                            Upgrade Plan
+                        </button>
+                        <button onclick="window.location.href='Pricing.html#credits'"
+                            class="w-full inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-medium px-4 py-2.5 rounded-md shadow-sm transition-colors">
+                            Buy Credits
+                        </button>
+                        <button id="billing-btn" onclick="openBillingPortal()" style="display:none"
+                            class="w-full inline-flex items-center justify-center gap-2 text-slate-500 hover:text-slate-900 text-xs font-medium px-4 py-2 transition-colors">
+                            Manage Billing
+                        </button>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Section: Danger Zone -->
-        <div class="pt-4 border-t border-slate-200">
-            <div class="flex items-center justify-between">
+            <!-- Plan Features Grid -->
+            <div class="border-t border-slate-100 bg-slate-50/30 px-6 py-4 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="flex items-start gap-2">
+                    <span class="iconify text-emerald-500 mt-0.5" data-icon="lucide:check-circle-2"
+                        data-width="14"></span>
+                    <span class="text-xs text-slate-600"><span id="plan-feature-audits">--</span> Audits / mo</span>
+                </div>
+                <div class="flex items-start gap-2">
+                    <span class="iconify text-emerald-500 mt-0.5" data-icon="lucide:check-circle-2"
+                        data-width="14"></span>
+                    <span class="text-xs text-slate-600">Basic Analytics</span>
+                </div>
+                <div class="flex items-start gap-2">
+                    <span class="iconify text-slate-300 mt-0.5" data-icon="lucide:x-circle" data-width="14"></span>
+                    <span class="text-xs text-slate-400">Team Collaboration</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section: Danger Zone -->
+    <div>
+        <div class="mb-4">
+            <h2 class="text-base font-medium text-slate-900 tracking-tight">Session</h2>
+            <p class="text-xs text-slate-500 mt-0.5">Manage your active session.</p>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-lg shadow-xs overflow-hidden">
+            <div class="p-6 flex items-center justify-between">
                 <div>
                     <h3 class="text-sm font-medium text-slate-900">Sign out</h3>
-                    <p class="text-xs text-slate-500 mt-0.5">End your current session.</p>
+                    <p class="text-xs text-slate-500 mt-0.5">End your current session safely.</p>
                 </div>
                 <button onclick="App.logout()"
-                    class="text-slate-500 hover:text-slate-900 hover:bg-slate-100 px-3 py-2 rounded-md transition-colors text-xs font-medium flex items-center gap-2">
+                    class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-red-600 px-4 py-2 rounded-md transition-colors text-xs font-medium flex items-center gap-2 shadow-sm">
                     <span class="iconify" data-icon="lucide:log-out" data-width="14"></span>
                     Log out
                 </button>
             </div>
         </div>
-
     </div>
+
+</div>
 </div>

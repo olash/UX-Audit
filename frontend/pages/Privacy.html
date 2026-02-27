@@ -1,13 +1,117 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" class="antialiased bg-slate-50">
 
 <head>
-    <title>Privacy Policy – UX Audit</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="../assets/images/favicon.png">
+    <title>Privacy Policy - UX Audit</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        slate: {
+                            850: '#1f2937',
+                            900: '#0f172a',
+                            950: '#020617',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
 </head>
 
-<body>
-    <h1>Privacy Policy</h1>
-    <p>Your privacy matters. Full policy coming soon.</p>
+<body class="text-slate-900 bg-slate-50 min-h-screen flex flex-col">
+
+    <!-- Minimal Header -->
+    <nav class="border-b border-slate-200 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <a href="/index.html" class="flex items-center gap-2 font-semibold text-lg text-slate-900">
+                <img src="../assets/images/logo.png" alt="UX Audit" class="h-10 w-auto">
+            </a>
+            <div class="flex gap-4">
+                <a href="Pricing.html" class="text-sm font-medium text-slate-600 hover:text-slate-900">Pricing</a>
+                <a href="Login.html" class="text-sm font-medium text-slate-600 hover:text-slate-900">Sign in</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="flex-grow py-16 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-3xl mx-auto">
+            <h1 class="text-3xl font-semibold tracking-tight text-slate-900 mb-8">Privacy Policy</h1>
+
+            <div class="prose prose-slate prose-sm sm:prose-base max-w-none text-slate-600">
+                <p class="text-sm text-slate-500 mb-8">Last updated: January 2026</p>
+
+                <p class="mb-8">Your privacy matters to us. This policy outlines how we collect, use, and protect your
+                    information.</p>
+
+                <div class="space-y-10">
+                    <section>
+                        <h2 class="text-lg font-semibold text-slate-900 mb-3">1. Information We Collect</h2>
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li><strong>Account Information:</strong> Name, email address, and password.</li>
+                            <li><strong>Usage Data:</strong> Pages visited, features used, and audit history.</li>
+                            <li><strong>Payment Data:</strong> Processed securely via our payment provider
+                                (LemonSqueezy); we do not store full card details.</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h2 class="text-lg font-semibold text-slate-900 mb-3">2. How We Use Your Data</h2>
+                        <ul class="list-disc pl-5 space-y-1">
+                            <li>To provide and improve the UX Audit service.</li>
+                            <li>To communicate with you about your account and updates.</li>
+                            <li>To ensure the security and integrity of our platform.</li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h2 class="text-lg font-semibold text-slate-900 mb-3">3. Data Security</h2>
+                        <p>We implement industry-standard security measures to protect your data. However, no method of
+                            transmission over the internet is 100% secure.</p>
+                    </section>
+
+                    <section>
+                        <h2 class="text-lg font-semibold text-slate-900 mb-3">4. Third-Party Services</h2>
+                        <p>We may use third-party services (e.g., analytics, payment processors) that collect monitor
+                            and analyze this type of information.</p>
+                    </section>
+
+                    <section>
+                        <h2 class="text-lg font-semibold text-slate-900 mb-3">5. Contact Us</h2>
+                        <p>If you have any questions about this Privacy Policy, please contact us at: <a
+                                href="mailto:privacy@tryuxaudit.com"
+                                class="text-slate-900 font-medium hover:underline">privacy@tryuxaudit.com</a></p>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-200 mt-auto bg-white py-8">
+        <div class="max-w-7xl mx-auto px-4 flex justify-center gap-8 text-sm text-slate-500">
+            <a href="Terms.html" class="hover:text-slate-900 transition-colors">Terms of Service</a>
+            <a href="Refunds.html" class="hover:text-slate-900 transition-colors">Refund Policy</a>
+            <a href="Privacy.html" class="hover:text-slate-900 transition-colors">Privacy Policy</a>
+        </div>
+    </footer>
+
 </body>
 
 </html>

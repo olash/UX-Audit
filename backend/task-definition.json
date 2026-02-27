@@ -1,0 +1,33 @@
+{
+    "family": "ux-audit-worker",
+    "networkMode": "awsvpc",
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "cpu": "1024",
+    "memory": "4096",
+    "executionRoleArn": "arn:aws:iam::275017714859:role/ecsTaskExecutionRole",
+    "taskRoleArn": "arn:aws:iam::275017714859:role/ecsTaskExecutionRole",
+    "containerDefinitions": [
+        {
+            "name": "audit-container",
+            "image": "275017714859.dkr.ecr.us-east-1.amazonaws.com/ux-audit-backend:v5",
+            "cpu": 1024,
+            "memory": 4096,
+            "essential": true,
+            "command": [
+                "node",
+                "/app/worker.js"
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/ux-audit-worker",
+                    "awslogs-region": "us-east-1",
+                    "awslogs-stream-prefix": "ecs",
+                    "awslogs-create-group": "true"
+                }
+            }
+        }
+    ]
+}

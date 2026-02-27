@@ -6,9 +6,30 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 2. Load Layout
     // We pass 'nav-dashboard' to highlight the dashboard link in sidebar
     await Layout.load('nav-dashboard');
+    Layout.setBreadcrumbs([{ label: 'Dashboard' }]);
 
     // 3. Load Page Content
     await Layout.loadContent('partials/dashboard.html');
+
+    // --- REALTIME UPDATES ---
+    if (App.user) {
+        supabase
+            .channel('dashboard-updates')
+            .on(
+                'postgres_changes',
+                {
+                    event: 'UPDATE',
+                    schema: 'public',
+                    table: 'projects',
+                    filter: `user_id=eq.${App.user.id}`
+                },
+                (payload) => {
+                    // unexpected update? reload list
+                    window.fetchAudits();
+                }
+            )
+            .subscribe();
+    }
 
     // 4. Check if content loaded - The following logic depends on elements existing in DOM
     const list = document.getElementById('audit-list');
@@ -20,18 +41,72 @@ document.addEventListener('DOMContentLoaded', async () => {
             const auditTableBody = document.getElementById('audit-list');
             if (!auditTableBody) return;
 
-            auditTableBody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-sm text-slate-500">Loading audits...</td></tr>';
+            // Skeleton Loading
+            const skeletonRow = `
+                <tr class="animate-pulse border-b border-slate-50 last:border-0">
+                    <td class="py-3 px-6">
+                        <div class="flex items-center gap-2">
+                             <div class="w-6 h-6 bg-slate-200 rounded"></div>
+                             <div class="space-y-1.5">
+                                 <div class="h-3 bg-slate-200 rounded w-32"></div>
+                                 <div class="h-2 bg-slate-200 rounded w-20"></div>
+                             </div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-6"><div class="h-5 bg-slate-200 rounded-full w-16"></div></td>
+                    <td class="py-3 px-6"><div class="h-3 bg-slate-200 rounded w-8"></div></td>
+                    <td class="py-3 px-6"><div class="h-4 bg-slate-200 rounded w-8"></div></td>
+                    <td class="py-3 px-6 text-right"><div class="h-4 bg-slate-200 rounded w-4 ml-auto"></div></td>
+                </tr>
+            `;
+            auditTableBody.innerHTML = skeletonRow.repeat(5);
 
             // Fetch audits from API
-            const data = await App.audits.getAll();
+            // Response format changed: { audits: [...], usage: { used, limit } }
+            // or fallback if old API (array)
+            const response = await App.audits.getAll();
+
+            let data = [];
+            let serverUsage = null;
+
+            if (Array.isArray(response)) {
+                data = response; // Old format
+            } else if (response.audits) {
+                data = response.audits;
+                serverUsage = response.usage;
+            }
 
             // Update Stats
             const stats = App.audits.calculateStats(data);
+
+            // Use Server Usage if available, otherwise calculate locally
+            const usedCount = serverUsage ? serverUsage.used : stats.thisMonthCount;
+            // Fetch Profile for Plan Limits if not provided by server
+            let planLimit = serverUsage ? serverUsage.limit : 2;
+
+            if (!serverUsage) {
+                try {
+                    const profile = await App.getProfile();
+                    const { PLANS } = await import('../config/pricing.js');
+                    const planName = (profile.plan || 'free').toLowerCase();
+                    const plan = PLANS[planName] || PLANS.free;
+                    planLimit = plan.auditLimit;
+                } catch (e) { console.warn("Could not fetch plan limits", e); }
+            }
+
             const elTotal = document.getElementById('stat-total');
             const elActive = document.getElementById('stat-active');
             const elCompleted = document.getElementById('stat-completed');
 
-            if (elTotal) elTotal.innerText = stats.total;
+            if (elTotal) {
+                // Show Usage / Limit
+                elTotal.innerHTML = `
+                    <div class="flex items-baseline gap-1">
+                        <span>${usedCount}</span>
+                        <span class="text-sm text-slate-400 font-normal">/ ${planLimit} used</span>
+                    </div>
+                `;
+            }
             if (elActive) elActive.innerText = stats.active;
             if (elCompleted) elCompleted.innerText = stats.completed;
 
@@ -71,15 +146,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                     statusBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100 animate-pulse">Running</span>';
                 }
 
+                const displayUrl = audit.target_url ? new URL(audit.target_url).hostname : (audit.url || 'Unknown URL');
+
                 return `
-                <tr class="group border-b border-slate-50 last:border-0 hover:bg-slate-50/80 transition-colors cursor-pointer" onclick="window.location.href='/pages/Dashboard_Recent Audit Page [View Result].html?id=${audit.id}'">
+                <tr class="group border-b border-slate-50 last:border-0 hover:bg-slate-50/80 transition-colors cursor-pointer" onclick="window.location.href='/pages/Result.html?id=${audit.id}'">
                     <td class="py-3 px-6 whitespace-nowrap">
                         <div class="flex items-center gap-2">
                             <div class="w-6 h-6 rounded bg-slate-100 flex items-center justify-center text-slate-500">
                                 <span class="iconify" data-icon="lucide:globe" data-width="12"></span>
                             </div>
                             <div>
-                                <div class="text-sm font-medium text-slate-900">${audit.url}</div>
+                                <div class="text-sm font-medium text-slate-900 truncate max-w-[200px] sm:max-w-[300px]">${displayUrl}</div>
                                 <div class="text-[10px] text-slate-400">${date}</div>
                             </div>
                         </div>

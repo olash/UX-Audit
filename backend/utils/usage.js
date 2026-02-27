@@ -1,21 +1,14 @@
 import { supabase } from "../db/supabase.js";
 
-const PLANS = {
-    free: { audits: 1, pages: 3 },
-    starter: { audits: 10, pages: 25 },
-    professional: { audits: 30, pages: 100 },
-    enterprise: { audits: 1000, pages: 1000 }
-};
+import { PLAN_ENTITLEMENTS } from "../config/pricing.js";
 
 export async function checkUsage(userId) {
     // 1. Get User Plan
-    // Assuming 'profiles' table exists and has 'plan' column. 
-    // If not, default to 'free'.
     let planName = 'free';
 
     const { data: profile } = await supabase
         .from('profiles')
-        .select('plan')
+        .select('plan, credits')
         .eq('id', userId)
         .single();
 
@@ -23,7 +16,13 @@ export async function checkUsage(userId) {
         planName = profile.plan.toLowerCase();
     }
 
-    const limits = PLANS[planName] || PLANS.free;
+    const entitlements = PLAN_ENTITLEMENTS[planName] || PLAN_ENTITLEMENTS.free;
+    const limits = {
+        audits: entitlements.auditsPerMonth,
+        pages: entitlements.maxPagesPerAudit
+    };
+
+    console.log(`[Usage Check] User: ${userId} | Plan: ${planName} | Credits: ${profile?.credits} | Limits: ${JSON.stringify(limits)}`);
 
     // 2. Count Audits this month
     const now = new Date();
@@ -51,6 +50,7 @@ export async function checkUsage(userId) {
     return {
         allowed: true,
         pageLimit: limits.pages,
-        plan: planName
+        plan: planName,
+        credits: profile?.credits || 0 // Usage logic can now use this
     };
 }

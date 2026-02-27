@@ -1,5 +1,6 @@
 // frontend/assets/js/app.js
 import { supabase } from './supabase.js';
+import posthog from './posthog.js';
 
 // Create single instance - REMOVED (imported above)
 
@@ -11,11 +12,26 @@ const App = {
     init: async () => {
         // Check active session
         const { data: { session } } = await supabase.auth.getSession();
+        App.session = session || null;
         App.user = session?.user || null;
+        if (App.user) {
+            try { posthog.identify(App.user.id, { email: App.user.email }); } catch (e) { }
+            App.startSessionTimer();
+            App.setupActivityListeners();
+        }
 
         // Listen for auth changes
         supabase.auth.onAuthStateChange((event, session) => {
+            App.session = session || null;
             App.user = session?.user || null;
+            if (App.user) {
+                try { posthog.identify(App.user.id, { email: App.user.email }); } catch (e) { }
+                App.startSessionTimer();
+                App.setupActivityListeners();
+            } else {
+                if (App.sessionTimer) clearTimeout(App.sessionTimer);
+                if (App.warningTimer) clearTimeout(App.warningTimer);
+            }
             if (event === 'USER_UPDATED' || event === 'SIGNED_IN') {
                 // Update header if layout is loaded
                 if (window.Layout && window.Layout.updateHeaderUser) {
@@ -70,10 +86,26 @@ const App = {
             email,
             password,
             options: {
-                data: { first_name: firstName, last_name: lastName }
+                data: { first_name: firstName, last_name: lastName },
+                emailRedirectTo: window.location.origin + '/frontend/pages/Login.html'
             }
         });
         if (error) throw error;
+
+        // Track signup - using user.id if available immediately, or data.user.id
+        if (data?.user) {
+            try {
+                if (posthog) {
+                    posthog.identify(data.user.id, { email: data.user.email, plan: 'free' });
+                    posthog.capture('user_signed_up', {
+                        distinctId: data.user.id,
+                        plan: 'free',
+                        method: 'email'
+                    });
+                }
+            } catch (e) { console.warn("PostHog signup track failed", e); }
+        }
+
         return data;
     },
 
@@ -105,7 +137,11 @@ const App = {
 
     // API Helper
     api: {
-        baseUrl: 'https://ux-audit-api.onrender.com',
+        get baseUrl() {
+            const hostname = window.location.hostname;
+            const isLocal = hostname === 'localhost' || hostname === '127.0.0.1';
+            return isLocal ? 'http://localhost:4000' : '';
+        },
 
         async getAuthHeaders() {
             const { data, error } = await supabase.auth.getSession();
@@ -124,7 +160,15 @@ const App = {
         async get(endpoint) {
             const headers = await this.getAuthHeaders();
             const res = await fetch(`${this.baseUrl}/api${endpoint}`, { headers });
-            if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
+            if (!res.ok) {
+                let errorMsg = res.statusText;
+                try {
+                    const errorData = await res.json();
+                    if (errorData.message) errorMsg = errorData.message;
+                    else if (errorData.error) errorMsg = errorData.error;
+                } catch (e) { /* ignore json parse error */ }
+                throw new Error(errorMsg);
+            }
             return res.json();
         },
 
@@ -138,8 +182,17 @@ const App = {
             });
 
             if (!res.ok) {
-                const text = await res.text();
-                throw new Error(`API Error: ${text}`);
+                let errorMsg = res.statusText;
+                try {
+                    const errorData = await res.json();
+                    if (errorData.message) errorMsg = errorData.message;
+                    else if (errorData.error) errorMsg = errorData.error;
+                    else errorMsg = JSON.stringify(errorData);
+                } catch (e) {
+                    const text = await res.text();
+                    if (text) errorMsg = text;
+                }
+                throw new Error(errorMsg);
             }
 
             return res.json();
@@ -166,7 +219,14 @@ const App = {
         },
 
         // Client-side stats calculation to centralize logic
-        calculateStats(audits) {
+        calculateStats(auditsOrResponse) {
+            let audits = [];
+            if (Array.isArray(auditsOrResponse)) {
+                audits = auditsOrResponse;
+            } else if (auditsOrResponse.audits) {
+                audits = auditsOrResponse.audits;
+            }
+
             const total = audits.length;
             const completed = audits.filter(a => a.status === 'completed').length;
             const active = total - completed;
@@ -208,6 +268,65 @@ const App = {
             }
             App.user = session.user;
         }
+    },
+
+    // Session Timeout Logic
+    sessionTimer: null,
+    warningTimer: null,
+    INACTIVITY_LIMIT: 10 * 60 * 1000, // 10 minutes
+    WARNING_LIMIT: 9 * 60 * 1000,     // 9 minutes
+
+    startSessionTimer: () => {
+        // Clear existing
+        if (App.sessionTimer) clearTimeout(App.sessionTimer);
+        if (App.warningTimer) clearTimeout(App.warningTimer);
+
+        // Only start if user is logged in
+        if (!App.user) return;
+
+        // Set Warning Trigger
+        App.warningTimer = setTimeout(() => {
+            const modal = document.getElementById('session-warning-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+            }
+        }, App.WARNING_LIMIT);
+
+        // Set Logout Trigger
+        App.sessionTimer = setTimeout(() => {
+            App.logout();
+        }, App.INACTIVITY_LIMIT);
+    },
+
+    extendSession: () => {
+        const modal = document.getElementById('session-warning-modal');
+        if (modal) modal.classList.add('hidden');
+        App.startSessionTimer();
+        console.log("Session extended");
+    },
+
+    setupActivityListeners: () => {
+        const events = ['mousemove', 'keydown', 'click', 'scroll'];
+        const resetHandler = () => {
+            // Only reset if modal is NOT visible (user hasn't triggered warning yet)
+            const modal = document.getElementById('session-warning-modal');
+            if (modal && modal.classList.contains('hidden')) {
+                App.startSessionTimer();
+            }
+        };
+
+        // Throttle slightly to avoid performance hit
+        let timeout;
+        events.forEach(event => {
+            window.addEventListener(event, () => {
+                if (!timeout) {
+                    timeout = setTimeout(() => {
+                        resetHandler();
+                        timeout = null;
+                    }, 1000);
+                }
+            });
+        });
     },
 
     // UI Helpers

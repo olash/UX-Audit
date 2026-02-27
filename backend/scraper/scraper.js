@@ -1,15 +1,16 @@
 import { createProject } from "../db/createProject.js";
 import { crawlSite } from "./crawl.js";
 import { finalizeProject } from "../db/finalizeProject.js";
+import { generateReport } from "../reports/generateReport.js"; // <--- 1. NEW IMPORT
 import { supabase } from "../db/supabase.js";
 
 /**
  * Orchestrates the scraping process.
  * @param {string} startUrl 
  * @param {string|null} existingProjectId 
- * @param {number} pageLimit - Max pages to crawl
+ * @param {number} pageLimit - Max pages to crawl (Must be dynamic based on User Plan)
  */
-export async function runScraper(startUrl, existingProjectId = null, pageLimit = 10) {
+export async function runScraper(startUrl, existingProjectId = null, pageLimit = 3) {
     console.log(`🚀 Starting scraper for: ${startUrl} (Limit: ${pageLimit} pages)`);
 
     let projectId = existingProjectId;
@@ -24,14 +25,28 @@ export async function runScraper(startUrl, existingProjectId = null, pageLimit =
             console.log(`ℹ️ Using existing Project ID: ${projectId}`);
         }
 
-        // 2. Run Crawl
-        await crawlSite(startUrl, projectId, pageLimit);
+        // 1b. Update Status: Crawling (Step 1/5)
+        await supabase.from('projects')
+            .update({
+                audit_status: 'crawling',
+                audit_step: 1,
+                audit_message: 'Starting crawler...'
+            })
+            .eq('id', projectId);
 
-        // 3. Finalize (Calc Score + Mark Complete)
+        // 2. Run Crawl
+        const pagesScanned = await crawlSite(startUrl, projectId, pageLimit);
+
+        // 3. Finalize (Calc Score)
+        console.log("🏁 Finalizing project:", projectId);
         await finalizeProject(projectId);
 
+        // 4. Generate PDF Report (Step 5/5) <--- NEW CRITICAL STEP
+        console.log("📄 Generating PDF Report...");
+        await generateReport(projectId);
+
         console.log("✅ Audit workflow completed.");
-        return projectId;
+        return { projectId, pagesScanned };
 
     } catch (err) {
         console.error("❌ Scraper workflow failed:", err.message);

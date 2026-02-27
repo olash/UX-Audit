@@ -1,3 +1,27 @@
+<!-- Progress Block (Sticky) -->
+<div id="progress-container" class="hidden mb-6 sticky top-4 z-50">
+    <div
+        class="bg-white rounded-lg border border-slate-200 shadow-lg p-4 flex items-center gap-4 animate-in slide-in-from-top-2 duration-300">
+        <!-- Spinner/Icon -->
+        <div class="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-blue-50 text-blue-600">
+            <span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="20"></span>
+        </div>
+
+        <div class="flex-1 min-w-0">
+            <div class="flex justify-between items-end mb-1.5">
+                <h3 class="text-sm font-semibold text-slate-900" id="progress-title">Audit in progress</h3>
+                <span class="text-xs font-medium text-slate-500" id="progress-step-text">Step 1/5</span>
+            </div>
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                <div id="progress-bar-fill" class="bg-blue-600 h-full rounded-full transition-all duration-500 ease-out"
+                    style="width: 20%"></div>
+            </div>
+            <p class="text-xs text-slate-500 mt-1.5 truncate" id="progress-message">Initializing...</p>
+        </div>
+    </div>
+</div>
+
 <!-- Breadcrumb & Header -->
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
     <div>
@@ -13,6 +37,11 @@
         </div>
     </div>
     <div class="flex items-center gap-3">
+        <button id="btn-rerun"
+            class="group inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium px-3 py-2 rounded shadow-sm border border-slate-200 transition-all">
+            <span class="iconify" data-icon="lucide:refresh-cw" data-width="14"></span>
+            Re-run Audit
+        </button>
         <button id="btn-download"
             class="group inline-flex items-center gap-2 bg-slate-950 hover:bg-slate-800 text-white text-xs font-medium px-3 py-2 rounded shadow-sm transition-all">
             <span class="iconify" data-icon="lucide:download" data-width="14"></span>
@@ -63,18 +92,52 @@
     <div class="lg:col-span-2 space-y-6">
         <!-- Issues Container -->
         <div class="bg-white rounded-lg border border-slate-200 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] overflow-hidden">
-            <div class="px-6 py-4 border-b border-slate-200">
-                <h3 class="font-medium text-sm text-slate-900">Identified Issues</h3>
-            </div>
-            <div class="divide-y divide-slate-100" id="issues-list">
+            <button onclick="toggleSection('issues-list')"
+                class="flex w-full items-center justify-between px-6 py-4 border-b border-slate-200 bg-white sticky top-0 z-10 hover:bg-slate-50 transition-colors group select-none text-left">
+                <div class="flex items-center gap-2">
+                    <h3 class="font-medium text-sm text-slate-900">Identified Issues</h3>
+                    <span class="text-xs text-slate-500 font-normal" id="issues-count">(0)</span>
+                </div>
+                <span class="iconify text-slate-400 group-hover:text-slate-600 transition-transform duration-200"
+                    data-icon="lucide:chevron-down" data-width="16" id="issues-list-chevron"></span>
+            </button>
+            <div class="divide-y divide-slate-100 hidden opacity-0 transition-all duration-300" id="issues-list"
+                style="max-height: 0px;">
                 <div class="p-6 text-center text-sm text-slate-500">Loading analysis...</div>
             </div>
         </div>
 
+        <!-- Suggested Fixes Container -->
+        <div class="bg-white rounded-lg border border-slate-200 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] overflow-hidden">
+            <button onclick="toggleSection('suggested-fixes-list')"
+                class="flex w-full items-center justify-between px-6 py-4 border-b border-slate-200 bg-white sticky top-0 z-10 hover:bg-slate-50 transition-colors group select-none text-left">
+                <div class="flex items-center gap-2">
+                    <h3 class="font-medium text-sm text-slate-900">Suggested Fixes</h3>
+                    <span class="text-xs text-slate-500 font-normal" id="fixes-count">(0)</span>
+                </div>
+                <span class="iconify text-slate-400 group-hover:text-slate-600 transition-transform duration-200"
+                    data-icon="lucide:chevron-down" data-width="16" id="suggested-fixes-list-chevron"></span>
+            </button>
+            <div class="divide-y divide-slate-100 hidden opacity-0 transition-all duration-300"
+                id="suggested-fixes-list" style="max-height: 0px;">
+                <div class="p-6 text-center text-sm text-slate-500">Loading suggestions...</div>
+            </div>
+        </div>
+
         <!-- Screenshots Gallery -->
-        <div class="bg-white rounded-lg border border-slate-200 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] p-6">
-            <h3 class="font-medium text-sm text-slate-900 mb-4">Screenshots</h3>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="screenshots-grid">
+        <div
+            class="bg-white rounded-lg border border-slate-200 shadow-[0px_2px_4px_rgba(0,0,0,0.02)] overflow-hidden p-0">
+            <button onclick="toggleSection('screenshots-grid')"
+                class="flex w-full items-center justify-between px-6 py-4 border-b border-slate-200 bg-white sticky top-0 z-10 hover:bg-slate-50 transition-colors group select-none text-left">
+                <div class="flex items-center gap-2">
+                    <h3 class="font-medium text-sm text-slate-900">Screenshots</h3>
+                    <span class="text-xs text-slate-500 font-normal" id="screenshots-count">(0)</span>
+                </div>
+                <span class="iconify text-slate-400 group-hover:text-slate-600 transition-transform duration-200"
+                    data-icon="lucide:chevron-down" data-width="16" id="screenshots-grid-chevron"></span>
+            </button>
+            <div class="p-6 transition-all duration-300 ease-in-out hidden opacity-0" id="screenshots-grid"
+                style="max-height: 0px;">
                 <!-- Populated by JS -->
             </div>
         </div>

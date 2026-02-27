@@ -15,8 +15,28 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!list) return;
 
         try {
-            list.innerHTML = '<tr><td colspan="6" class="py-8 text-center text-sm text-slate-500">Loading reports...</td></tr>';
-            const audits = await App.audits.getAll({ status: 'completed' });
+            // Skeleton Loading
+            const skeletonRow = `
+                <tr class="animate-pulse">
+                    <td class="px-4 py-3"><div class="h-4 bg-slate-200 rounded w-4"></div></td>
+                    <td class="px-4 py-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 bg-slate-200 rounded"></div>
+                            <div class="space-y-2">
+                                <div class="h-3 bg-slate-200 rounded w-24"></div>
+                                <div class="h-2 bg-slate-200 rounded w-32"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-4 py-3"><div class="h-3 bg-slate-200 rounded w-20"></div></td>
+                    <td class="px-4 py-3"><div class="h-8 w-8 bg-slate-200 rounded-full"></div></td>
+                    <td class="px-4 py-3"><div class="h-5 bg-slate-200 rounded-full w-20"></div></td>
+                    <td class="px-4 py-3 text-right"><div class="h-4 bg-slate-200 rounded w-4 ml-auto"></div></td>
+                </tr>
+            `;
+            list.innerHTML = skeletonRow.repeat(5);
+            const res = await App.audits.getAll({ status: 'completed' });
+            const audits = Array.isArray(res) ? res : (res.audits || []);
 
             if (audits.length === 0) {
                 list.innerHTML = `
@@ -69,7 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
 
                 return `
-                <tr class="group hover:bg-slate-50 transition-colors cursor-pointer" onclick="window.location.href='/pages/Dashboard_Recent Audit Page [View Result].html?id=${audit.id}'">
+                <tr class="group hover:bg-slate-50 transition-colors cursor-pointer" onclick="window.location.href='/pages/Result.html?id=${audit.id}'">
                     <td class="px-4 py-3 text-center" onclick="event.stopPropagation()">
                          <input type="checkbox" class="rounded border-slate-300 text-slate-900 focus:ring-slate-900 h-3.5 w-3.5 cursor-pointer">
                     </td>
@@ -103,7 +123,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </td>
                      <td class="py-3 px-4 text-right" onclick="event.stopPropagation()">
                          <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                             <button class="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200/50 rounded transition-colors" onclick="window.location.href='/pages/Dashboard_Recent Audit Page [View Result].html?id=${audit.id}'">
+                             <button class="p-1.5 text-slate-500 hover:text-slate-900 hover:bg-slate-200/50 rounded transition-colors" onclick="window.location.href='/pages/Result.html?id=${audit.id}'">
                                  <span class="iconify" data-icon="lucide:eye" data-width="16"></span>
                              </button>
                          </div>

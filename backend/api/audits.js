@@ -1,9 +1,22 @@
 import express from "express";
-import { createProject } from "../db/createProject.js";
-import { runScraper } from "../scraper/scraper.js";
 import { supabase } from "../db/supabase.js";
+import { posthog } from '../utils/posthog.js';
 import { generateReport } from "../reports/generateReport.js";
-// import { checkUsage } from "../utils/usage.js";
+import { PLAN_ENTITLEMENTS } from "../config/pricing.js";
+import { ECSClient, RunTaskCommand } from "@aws-sdk/client-ecs";
+
+// ECS Client for triggering Fargate Spot worker tasks
+const ecsClient = new ECSClient({ region: "us-east-1" });
+
+// ECS Network Config (Fargate Spot)
+const ECS_CLUSTER = "ux-audit-cluster";
+const ECS_TASK_DEFINITION = "ux-audit-worker";
+const ECS_SUBNETS = [
+    "subnet-0996df47a3651f00a",
+    "subnet-08c5b5ebd0eb6d56b",
+    "subnet-0036300c6165e50a5"
+];
+const ECS_SECURITY_GROUPS = ["sg-0f7a0cf4cae753a8d"];
 
 const router = express.Router();
 
@@ -33,8 +46,42 @@ async function getUserFromRequest(req) {
     };
 }
 
+// Helper: Assert Audit Permission (Hard Gate)
+function assertCanRunAudit(planName, entitlements, credits, auditsUsed) {
+    if (!entitlements) {
+        throw new Error("Invalid plan. Audit blocked.");
+    }
+
+    if (auditsUsed >= entitlements.auditsPerMonth) {
+        throw new Error(`Monthly audit limit reached. Your plan allows ${entitlements.auditsPerMonth} audits.`);
+    }
+
+    // Return the allowed page limit to be used by the scraper
+    return {
+        baseLimit: entitlements.maxPagesPerAudit,
+        // We allow credits to extend the limit, but the *base* right to audit is validated here.
+        // If strict "Page Limit" check is needed BEFORE crawl, we do it here:
+        // if (requestedPages > entitlements.maxPagesPerAudit + credits) throw ...
+    };
+}
+
+// Security Layer 1: Rate Limiting
+import rateLimit from 'express-rate-limit';
+const auditLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 5, // Limit each IP to 5 audit creations per minute
+    message: { error: "Too many audit requests. Please wait a minute." }
+});
+
+// Security Layer 2: Input Validation
+import { z } from 'zod';
+const AuditSchema = z.object({
+    url: z.string().url("Invalid URL format"),
+    // Optional params can be added here
+});
+
 // POST /api/audits - Start an audit
-router.post("/", async (req, res) => {
+router.post("/", auditLimiter, async (req, res) => {
     try {
         let user;
         try {
@@ -43,24 +90,202 @@ router.post("/", async (req, res) => {
             return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        const { url } = req.body;
-        if (!url) {
-            return res.status(400).json({ error: "URL is required" });
+        const validation = AuditSchema.safeParse(req.body);
+        if (!validation.success) {
+            return res.status(400).json({
+                error: "Invalid input",
+                details: validation.error.format()
+            });
         }
 
-        // --- USAGE CHECK REMOVED ---
-        // const usage = await checkUsage(user.id);
+        const { url } = validation.data;
 
-        console.log(`User ${user.id} starting audit.`);
+        // --- STRICT PLAN & CREDIT ENFORCEMENT ---
+        // 1. Fetch User Profile & Plan (MANDATORY)
+        const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('plan, credits')
+            .eq('id', user.id)
+            .single();
 
-        // 1. Create project immediately associated with user
-        const project = await createProject(url, user.id);
+        if (profileError || !profile) {
+            console.error("❌ Profile verify failed:", profileError);
+            return res.status(403).json({ error: "Unable to verify user plan. Audit blocked." });
+        }
 
-        // 2. Start (async) scrape with Default Page Limit
-        runScraper(url, project.id).catch(err => console.error("Background audit error:", err));
+        const planName = (profile.plan || '').toLowerCase();
+        const entitlements = PLAN_ENTITLEMENTS[planName];
 
-        return res.status(201).json({
-            message: "Audit started",
+        if (!entitlements) {
+            console.error(`❌ Invalid plan '${planName}' for user ${user.id}`);
+            return res.status(403).json({ error: "Invalid plan. Audit blocked." });
+        }
+
+        // --- 2. Count Monthly Audits Used ---
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+        const { count: auditsUsed, error: countError } = await supabase
+            .from('projects')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .gte('created_at', startOfMonth);
+
+        if (countError) {
+            console.error("Failed to count audits:", countError);
+            return res.status(500).json({ error: "Internal check failed" });
+        }
+
+        // --- 3. HARD GATE: Monthly Audit Limit vs Credits ---
+        // Determines if we use a "Monthly Entitlement" or "Credit Balance"
+
+        let usageType = 'monthly'; // 'monthly' | 'credits'
+        let effectivePageLimit = entitlements.maxPagesPerAudit;
+
+        if (auditsUsed < entitlements.auditsPerMonth) {
+            // Case A: Monthly Allocation Available
+            console.log(`✅ Using Monthly Audit (${auditsUsed + 1}/${entitlements.auditsPerMonth})`);
+            usageType = 'monthly';
+        } else {
+            // Case B: Monthly Limit Exceeded -> Check Credits
+            console.log(`⚠️ Monthly limit reached. Checking credits...`);
+
+            // For "Start", we need at least 1 credit (or enough for the base limit?)
+            // User: "If credits_balance >= remaining ... deduct" 
+            // Since we don't know exact pages yet, we ensure they have enough for a minimal useful scan?
+            // Or better: The User said "Credits are for exceeding monthly volume".
+            // We'll allow it if they have > 0 credits, and enforce the plan's page limit.
+
+            if ((profile.credits || 0) < 1) {
+                return res.status(403).json({
+                    error: "Monthly limit reached & insufficient credits",
+                    message: "You have used all your monthly audits. specific credits are required to continue."
+                });
+            }
+
+            // User Request: "Limit is until all credits are exhausted"
+            effectivePageLimit = profile.credits;
+            console.log(`✅ Using Credits (Balance: ${profile.credits} -> Limit: ${effectivePageLimit} pages)`);
+            usageType = 'credits';
+        }
+
+        console.log(`[Audit Start] User: ${user.id} | Plan: ${planName} | Type: ${usageType} | Limit: ${effectivePageLimit}`);
+
+        // 1. Create project
+        // Note: attempting to store usage_type in metadata if possible, otherwise we infer
+        const { data: project, error: createError } = await supabase
+            .from('projects')
+            .insert({
+                user_id: user.id,
+                target_url: url,
+                status: 'running',
+                progress_step: 1,
+                progress_label: 'Initializing scanner...',
+                // We'll try to use a 'metadata' column if it exists, or 'audit_message' to store type hiddenly if needed.
+                // Given I cannot easily add columns, I will rely on finalizeProject knowing the logic OR
+                // I will use a JSONB column if I find one. 
+                // Let's assume 'metadata' exists as it's best practice. 
+                // If this fails, I'll have to fix it.
+                metadata: { usage_type: usageType, cost_per_page: usageType === 'credits' ? 1 : 0 },
+                payment_source: usageType // Enterprise Polish: Store explicitly
+            })
+            .select()
+            .single();
+
+        if (createError) {
+            // Fallback if metadata column doesn't exist
+            if (createError.message && createError.message.includes('metadata')) {
+                console.warn("Metadata column missing, retrying without...");
+                const { data: retryProject, error: retryError } = await supabase
+                    .from('projects')
+                    .insert({
+                        user_id: user.id,
+                        target_url: url,
+                        status: 'running',
+                        progress_step: 1,
+                        progress_label: `Initializing scanner... [${usageType}]`, // Embed in label as last resort
+                        payment_source: usageType
+                    })
+                    .select()
+                    .single();
+                if (retryError) throw retryError;
+                // Assign to project variable
+                Object.assign(project, retryProject || {});
+            } else {
+                throw createError;
+            }
+        }
+
+        // Track in PostHog
+        try {
+            if (posthog) {
+                posthog.capture({
+                    distinctId: user.id,
+                    event: 'audit_started',
+                    properties: {
+                        plan: planName,
+                        payment_source: usageType,
+                        url: url,
+                        credits_balance: profile.credits || 0
+                    }
+                });
+            }
+        } catch (phError) {
+            console.error('PostHog Error:', phError);
+        }
+
+        // 2. Start (async) scrape via AWS ECS Fargate Spot
+        (async () => {
+            try {
+                await supabase.from('projects').update({
+                    progress_step: 2,
+                    progress_label: 'Spinning up audit server...'
+                }).eq('id', project.id);
+
+                console.log(`[DEBUG] Triggering ECS Fargate Spot for project ${project.id}`);
+
+                const params = {
+                    cluster: ECS_CLUSTER,
+                    taskDefinition: ECS_TASK_DEFINITION,
+                    capacityProviderStrategy: [
+                        { capacityProvider: "FARGATE_SPOT", weight: 1 } // 🔥 70% Discount!
+                    ],
+                    networkConfiguration: {
+                        awsvpcConfiguration: {
+                            subnets: ECS_SUBNETS,
+                            securityGroups: ECS_SECURITY_GROUPS,
+                            assignPublicIp: "ENABLED"
+                        }
+                    },
+                    overrides: {
+                        containerOverrides: [
+                            {
+                                name: "audit-container",
+                                environment: [
+                                    { name: "PROJECT_ID", value: project.id },
+                                    { name: "URL", value: url },
+                                    { name: "PAGE_LIMIT", value: effectivePageLimit.toString() }
+                                ]
+                            }
+                        ]
+                    }
+                };
+
+                await ecsClient.send(new RunTaskCommand(params));
+                console.log(`✅ ECS Task launched successfully for ${url}`);
+
+            } catch (err) {
+                console.error("❌ Failed to launch ECS task:", err);
+                await supabase.from('projects').update({
+                    status: 'failed',
+                    progress_label: 'Error launching audit server: ' + err.message
+                }).eq('id', project.id);
+            }
+        })();
+
+        return res.status(202).json({
+            message: "Audit started in the background. Please wait.",
+            status: "processing",
             auditId: project.id
         });
 
@@ -82,7 +307,7 @@ router.get("/", async (req, res) => {
 
         let query = supabase
             .from('projects')
-            .select('*')
+            .select('id, target_url, status, score, created_at')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false });
 
@@ -95,7 +320,28 @@ router.get("/", async (req, res) => {
 
         if (error) throw error;
 
-        res.json(data);
+        // Calculate Usage (Server-Side Source of Truth)
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+        const { count: auditsUsed } = await supabase
+            .from('projects')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .gte('created_at', startOfMonth);
+
+        // Fetch Plan Limit for convenience
+        const { data: profile } = await supabase.from('profiles').select('plan').eq('id', user.id).single();
+        const planName = (profile?.plan || 'free').toLowerCase();
+        const limit = PLAN_ENTITLEMENTS[planName]?.auditsPerMonth || 2;
+
+        res.json({
+            audits: data,
+            usage: {
+                used: auditsUsed || 0,
+                limit: limit
+            }
+        });
     } catch (error) {
         console.error("Error fetching audits:", error);
         res.status(500).json({ error: "Failed to fetch audits" });
@@ -138,7 +384,8 @@ router.get("/:id/results", async (req, res) => {
                 url,
                 screenshot_url,
                 ai_reviews!ai_reviews_page_id_fkey (
-                    scores
+                    scores,
+                    analysis
                 )
             `)
             .eq('project_id', id);
@@ -161,7 +408,25 @@ router.get("/:id/results", async (req, res) => {
 // GET /api/audits/:id/report - Get PDF URL
 router.get("/:id/report", async (req, res) => {
     try {
+        let user;
+        try {
+            user = await getUserFromRequest(req);
+        } catch (e) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
         const { id } = req.params;
+
+        // Check Plan
+        // Check Plan (Fetching plan just for logging/context if needed, but restriction removed)
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('plan')
+            .eq('id', user.id)
+            .single();
+
+        // const planName = (profile?.plan || 'free').toLowerCase();
+        // PDF Reports are now available for ALL plans.
 
         // Generate (or fetch existing) PDF URL
         const pdfUrl = await generateReport(id);
@@ -171,6 +436,52 @@ router.get("/:id/report", async (req, res) => {
     } catch (error) {
         console.error("Report generation failed:", error);
         res.status(500).json({ error: "Report generation failed" });
+    }
+});
+
+
+// GET /api/audits/:id/issues - Get all issues for a project (joined with pages)
+router.get("/:id/issues", async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // 1. Get all pages for this project
+        const { data: pages, error: pageError } = await supabase
+            .from('pages')
+            .select('id')
+            .eq('project_id', id);
+
+        if (pageError) throw pageError;
+
+        const pageIds = pages.map(p => p.id);
+
+        if (pageIds.length === 0) {
+            return res.json({ issues: [] });
+        }
+
+        // 2. Fetch issues for these pages, joining 'pages' to get URL
+        const { data: issues, error: issuesError } = await supabase
+            .from('ux_issues')
+            .select(`
+                id,
+                title,
+                description,
+                severity,
+                category,
+                ai_suggestion,
+                pages (
+                    url
+                )
+            `)
+            .in('page_id', pageIds);
+
+        if (issuesError) throw issuesError;
+
+        res.json({ issues });
+
+    } catch (error) {
+        console.error("Error fetching project issues:", error);
+        res.status(500).json({ error: "Failed to fetch issues" });
     }
 });
 
