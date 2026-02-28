@@ -96,31 +96,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
-// --- GOOGLE LOGIN CALLBACK ---
-// Needs to be accessible globally for Google Identity Services
-window.handleGoogleLogin = async (response) => {
-    try {
-        // We use the supabase client directly for the ID token sign-in
-        const { data, error } = await window.supabase.auth.signInWithIdToken({
-            provider: 'google',
-            token: response.credential,
+// --- GOOGLE OAUTH (CUSTOM BUTTON) ---
+document.addEventListener('DOMContentLoaded', () => {
+    const googleAuthBtns = document.querySelectorAll('.google-auth-btn');
+    if (googleAuthBtns.length > 0) {
+        googleAuthBtns.forEach(btn => {
+            btn.addEventListener('click', async () => {
+                try {
+                    // Add loading state to match your other buttons
+                    btn.disabled = true;
+                    const originalContent = btn.innerHTML;
+                    btn.innerHTML = '<span class="iconify animate-spin mr-2" data-icon="lucide:loader-2"></span> Connecting...';
+
+                    // Trigger Supabase's built-in Google OAuth redirect
+                    const { error } = await window.supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: {
+                            // Redirect them straight to the dashboard after Google approves
+                            redirectTo: `${window.location.origin}/pages/Dashboard_Homepage.html`
+                        }
+                    });
+
+                    if (error) throw error;
+                    // Note: We don't need a toast here because the page redirects immediately
+
+                } catch (err) {
+                    console.error('Google Auth Error:', err);
+                    window.App.toast('error', err.message || 'Google Login failed');
+                    btn.disabled = false;
+                    btn.innerHTML = originalContent; // Restore button text if it fails
+                }
+            });
         });
-
-        if (error) throw error;
-
-        window.App.toast('success', 'Logged in with Google successfully');
-
-        // Wait a short moment then redirect to dashboard
-        setTimeout(() => {
-            window.location.href = '/pages/Dashboard_Homepage.html';
-        }, 500);
-
-    } catch (err) {
-        console.error('Google Auth Error:', err);
-        if (window.App && window.App.toast) {
-            window.App.toast('error', err.message || 'Google Login failed');
-        } else {
-            alert(err.message || 'Google Login failed');
-        }
     }
-};
+});
