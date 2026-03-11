@@ -8,8 +8,13 @@ import checkoutRouter from "./api/checkout.js";
 import webhooksRouter from "./api/webhooks.js";
 import dotenv from "dotenv";
 
+
 // Load environment variables from root
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
+// Import background jobs after env vars are loaded
+import('./cron.js').catch(err => console.error('Failed to load cron jobs:', err));
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

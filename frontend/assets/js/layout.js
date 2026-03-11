@@ -4,7 +4,7 @@ const Layout = {
      */
     loadPublic: async function () {
         try {
-            const response = await fetch('../components/public-layout.html');
+            const response = await fetch('/components/public-layout.html');
             const html = await response.text();
             document.getElementById('app').innerHTML = html;
 
@@ -43,7 +43,7 @@ const Layout = {
      */
     load: async function (activeNavId) {
         try {
-            const response = await fetch('../components/dashboard-layout.html');
+            const response = await fetch('/components/dashboard-layout.html');
             const html = await response.text();
             document.getElementById('app').innerHTML = html;
 

@@ -1,11 +1,17 @@
 import { Resend } from 'resend';
 
-// Initialize Resend with your environment variable
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Initialize Resend lazily so environment variables are loaded first
+let resendInstance = null;
+const getResend = () => {
+    if (!resendInstance) {
+        resendInstance = new Resend(process.env.RESEND_API_KEY);
+    }
+    return resendInstance;
+};
 
 export async function sendAuditCompleteEmail(toEmail, reportUrl) {
     try {
-        const data = await resend.emails.send({
+        const data = await getResend().emails.send({
             from: 'Abdurrahman at UX Audit <hello@tryuxaudit.com>', // Change to custom domain later
             to: [toEmail],
             subject: 'Your UX Audit Report is Ready! 🎉',
@@ -26,7 +32,7 @@ export async function sendAuditCompleteEmail(toEmail, reportUrl) {
 
 export async function sendWelcomeEmail(toEmail) {
     try {
-        const data = await resend.emails.send({
+        const data = await getResend().emails.send({
             from: 'Abdurrahman at UX Audit <hello@tryuxaudit.com>', // Update when you add a custom domain
             to: [toEmail],
             subject: 'Welcome to UX Audit! 🎉',
@@ -44,3 +50,64 @@ export async function sendWelcomeEmail(toEmail) {
         console.error("❌ Failed to send welcome email:", error);
     }
 }
+
+export const sendLeadMagnetEmail = async (email, source) => {
+    try {
+        let pdfUrl = '';
+        let companyName = '';
+
+        // Match the exact source string we used in the frontend form
+        if (source === 'stripe_teardown_pdf') {
+            companyName = 'Stripe';
+            pdfUrl = 'https://www.tryuxaudit.com/assets/pdfs/stripe-15-page-audit.pdf';
+        } else if (source === 'airbnb_teardown_pdf') {
+            companyName = 'Airbnb';
+            pdfUrl = 'https://www.tryuxaudit.com/assets/pdfs/AirBnB.pdf';
+        } else if (source === 'netflix_teardown_pdf') {
+            companyName = 'Netflix';
+            pdfUrl = 'https://www.tryuxaudit.com/assets/pdfs/Netflix.pdf';
+        } else {
+            console.log(`Unknown lead source: ${source}`);
+            return;
+        }
+
+        const html = `
+            <div style="font-family: sans-serif; max-width: 580px; margin: 0 auto; color: #1e293b;">
+                <h2 style="color: #0f172a;">Here is your complete UX Teardown</h2>
+                <p>Hi there,</p>
+                <p>Thanks for reading our teardown! As promised, I have attached the full 15-page deep dive into ${companyName}'s design patterns and conversion leaks.</p>
+
+                <p><strong>Want to see how your own website scores?</strong></p>
+                <p>You can run a free, automated UX audit on your own site using the exact same AI engine we used for this report.</p>
+                <p><a href="https://www.tryuxaudit.com/signup.html" style="color: #2563eb; font-weight: bold;">Run your free UX Audit here &rarr;</a></p>
+
+                <p style="margin-top: 40px; font-size: 14px; color: #64748b;">
+                    Best,<br>
+                    Abdurrahman at UX Audit
+                </p>
+            </div>
+        `;
+
+        const data = await getResend().emails.send({
+            from: 'Abdurrahman at UX Audit <hello@tryuxaudit.com>',
+            to: email,
+            subject: `Your ${companyName} 15-Page UX Audit PDF 📄`,
+            html: html,
+            attachments: [
+                {
+                    // Resend fetches the PDF from this URL and attaches it directly to the email
+                    filename: `${companyName}_UX_Audit.pdf`,
+                    path: pdfUrl
+                }
+            ]
+        });
+
+        console.log(`✅ Lead magnet sent to ${email} for ${companyName}`);
+        return data;
+
+    } catch (error) {
+        console.error('❌ Error sending lead magnet email:', error);
+        throw error;
+    }
+};
+

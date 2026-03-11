@@ -2,7 +2,7 @@ import express from 'express';
 import { supabase } from '../db/supabase.js';
 import crypto from 'crypto';
 import { posthog } from '../utils/posthog.js';
-import { sendWelcomeEmail } from '../utils/email.js';
+import { sendWelcomeEmail, sendLeadMagnetEmail } from '../utils/email.js';
 
 const router = express.Router();
 
@@ -214,6 +214,32 @@ router.post('/new-user', async (req, res) => {
         res.status(200).send('OK');
     } catch (error) {
         console.error('❌ Webhook Error:', error);
+        res.status(500).send('Error processing webhook');
+    }
+});
+
+// Supabase Database Webhook for New Leads (fires after a row is inserted into the 'leads' table)
+router.post('/new-lead', async (req, res) => {
+    try {
+        const payload = req.body;
+
+        console.log("📨 Received New Lead Webhook:", JSON.stringify(payload));
+
+        // Supabase sends the newly inserted row inside the "record" object
+        const newLead = payload?.record;
+
+        if (!newLead || !newLead.email || !newLead.source) {
+            return res.status(400).send('Missing lead data');
+        }
+
+        console.log(`🎉 New lead captured: ${newLead.email}. Attaching PDF for ${newLead.source}...`);
+
+        // Trigger the Resend function we just built
+        await sendLeadMagnetEmail(newLead.email, newLead.source);
+
+        res.status(200).send('Webhook processed successfully');
+    } catch (error) {
+        console.error('❌ Lead Webhook Error:', error);
         res.status(500).send('Error processing webhook');
     }
 });
