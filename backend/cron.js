@@ -107,12 +107,24 @@ export async function runCleanupJob() {
                 .in('page_id', pageIds);
             if (aiReviewsDelError) console.error('[CRON] Error deleting ai_reviews:', aiReviewsDelError);
             
-            // Delete from ux_issues
+            // Delete from ux_issues (by page_id first)
             const { error: uxIssuesDelError } = await supabase
                 .from('ux_issues')
                 .delete()
                 .in('page_id', pageIds);
             if (uxIssuesDelError) console.error('[CRON] Error deleting ux_issues:', uxIssuesDelError);
+            
+            // Delete from ux_issues (by project_id, if schema supports it)
+            await supabase.from('ux_issues').delete().in('project_id', projectIds).catch(() => {});
+            
+            // Delete from project_issues
+            await supabase.from('project_issues').delete().in('project_id', projectIds).catch(() => {});
+            
+            // Delete from reports (database table)
+            await supabase.from('reports').delete().in('project_id', projectIds).catch(() => {});
+            
+            // Delete from notifications
+            await supabase.from('notifications').delete().in('project_id', projectIds).catch(() => {});
             
             // Delete from pages
             const { error: pagesDelError } = await supabase
@@ -121,9 +133,12 @@ export async function runCleanupJob() {
                 .in('project_id', projectIds);
             if (pagesDelError) console.error('[CRON] Error deleting pages:', pagesDelError);
         } else {
-            // No pages found, but we should still attempt to delete from pages just in case
-            // (or if pages.length was 0, it means no pages existed)
-            // But let's be safe and try to delete any orphaned pages if they exist without fetching them
+            // No pages found, but we should still attempt to delete from parent-linked tables just in case
+            await supabase.from('ux_issues').delete().in('project_id', projectIds).catch(() => {});
+            await supabase.from('project_issues').delete().in('project_id', projectIds).catch(() => {});
+            await supabase.from('reports').delete().in('project_id', projectIds).catch(() => {});
+            await supabase.from('notifications').delete().in('project_id', projectIds).catch(() => {});
+
             const { error: pagesDelError } = await supabase
                 .from('pages')
                 .delete()
@@ -131,7 +146,7 @@ export async function runCleanupJob() {
             if (pagesDelError) console.error('[CRON] Error deleting pages:', pagesDelError);
         }
 
-        // Now safe to delete the projects
+        // 6. PARENT DELETE: Now safe to delete the projects
         const { error: deletionError } = await supabase
             .from('projects')
             .delete()
@@ -143,6 +158,18 @@ export async function runCleanupJob() {
             console.log(`[CRON] ✅ Successfully deleted ${projectIds.length} projects from database.`);
             console.log(`[CRON] ✅ Cleaned up ${deletedScreenshotsCount} screenshots and ${deletedReportsCount} reports from Storage.`);
         }
+        
+        // 7. ORPHAN SWEEP: Clean up any lingering data where parent FK is null, from incomplete runs
+        console.log('[CRON] Performing orphan sweep on child tables...');
+        const sweeps = [
+            supabase.from('ai_reviews').delete().is('page_id', null).then(r => r.error && console.error('[CRON] Error sweeping ai_reviews:', r.error)),
+            supabase.from('ux_issues').delete().is('page_id', null).then(r => r.error && console.error('[CRON] Error sweeping ux_issues (page_id null):', r.error)),
+            supabase.from('project_issues').delete().is('project_id', null).then(r => r.error && r.error.code !== '42P01' && console.error('[CRON] Error sweeping project_issues:', r.error)),
+            supabase.from('reports').delete().is('project_id', null).then(r => r.error && r.error.code !== '42P01' && console.error('[CRON] Error sweeping reports db:', r.error)),
+            supabase.from('pages').delete().is('project_id', null).then(r => r.error && console.error('[CRON] Error sweeping pages:', r.error))
+        ];
+        await Promise.allSettled(sweeps);
+        console.log('[CRON] Orphan sweep completed.');
 
     } catch (error) {
         console.error('[CRON] Unknown error during cleanup:', error);
