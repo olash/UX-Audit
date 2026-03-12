@@ -118,7 +118,34 @@ export async function runCleanupJob() {
             }
         }
 
-        console.log('[CRON] Total Old Projects Found across all chunks:', oldProjects.length);
+        // Fetch anonymous projects (user_id is null) older than 7 days
+        const { data: anonProjects, error: anonProjectsError } = await supabase
+            .from('projects')
+            .select('id')
+            .is('user_id', null)
+            .lt('created_at', cutoffIso);
+            
+        if (anonProjectsError) {
+            console.error('[CRON] Error fetching old anonymous projects:', anonProjectsError);
+        } else if (anonProjects && anonProjects.length > 0) {
+            console.log(`[CRON] Found ${anonProjects.length} old anonymous project(s).`);
+            oldProjects = oldProjects.concat(anonProjects);
+        }
+
+        console.log('[CRON] Total Old Projects Found across all chunks (incl. anon):', oldProjects.length);
+
+        // DIAGNOSTIC PROBE: Blindly look for ANY project older than 7 days (limit 5)
+        const { data: mysteryProjects, error: mysteryErr } = await supabase
+            .from('projects')
+            .select('id, user_id, created_at, target_url')
+            .lt('created_at', cutoffIso)
+            .limit(5);
+            
+        if (mysteryErr) {
+             console.error('[CRON] Diagnostic Probe Error:', mysteryErr);
+        } else {
+             console.log('[CRON] Diagnostic Probe - 5 oldest remaining projects in DB:', mysteryProjects);
+        }
 
         if (oldProjects.length === 0) {
             console.log(`[CRON] No projects older than 7 days found for Free users.`);
