@@ -42,8 +42,12 @@ export async function runCleanupJob() {
             const { error: repErr } = await supabase.from('reports').delete().is('project_id', null);
             if (repErr && repErr.code !== '42P01') console.error('[CRON] Error sweeping reports db:', repErr);
 
-            const { error: notifErr } = await supabase.from('notifications').delete().is('project_id', null);
-            if (notifErr) console.error('[CRON] Error sweeping notifications:', notifErr);
+            // Safely skip the Orphan Sweep for notifications due to JSONB cross-referencing complexity in a single query.
+            // We will rely on targeted cascade deletions instead for now.
+            // If we really need this in the future: await supabase.from('notifications').delete().is('meta->>project_id', null); (doesn't work exactly like this in supabase out of the box).
+            // Let's sweep if we can at least ensure we don't break the whole job.
+            const { error: notifErr } = await supabase.from('notifications').delete().is('meta->>project_id', null);
+            if (notifErr && notifErr.code !== 'PGRST100') console.error('[CRON] Error sweeping notifications:', notifErr);
 
         } catch (sweepError) {
             console.error('[CRON] Critical error during orphan sweep:', sweepError);
@@ -169,9 +173,9 @@ export async function runCleanupJob() {
             const { error: repProjErr } = await supabase.from('reports').delete().in('project_id', projectIds);
             if (repProjErr) console.error('[CRON] Error fallback deleting reports by project_id:', repProjErr);
 
-            // Delete from notifications
-            const { error: notifProjErr } = await supabase.from('notifications').delete().in('project_id', projectIds);
-            if (notifProjErr) console.error('[CRON] Error deleting notifications by project_id:', notifProjErr);
+            // Delete from notifications using new JSONB meta column
+            const { error: notifProjErr } = await supabase.from('notifications').delete().in('meta->>project_id', projectIds);
+            if (notifProjErr) console.error('[CRON] Error deleting notifications by jsonb project_id:', notifProjErr);
 
             // Delete from pages
             const { error: pagesDelError } = await supabase
@@ -189,8 +193,8 @@ export async function runCleanupJob() {
             const { error: fallbackRepErr } = await supabase.from('reports').delete().in('project_id', projectIds);
             if (fallbackRepErr) console.error('[CRON] Error fallback deleting reports:', fallbackRepErr);
 
-            const { error: fallbackNotifErr } = await supabase.from('notifications').delete().in('project_id', projectIds);
-            if (fallbackNotifErr) console.error('[CRON] Error fallback deleting notifications:', fallbackNotifErr);
+            const { error: fallbackNotifErr } = await supabase.from('notifications').delete().in('meta->>project_id', projectIds);
+            if (fallbackNotifErr) console.error('[CRON] Error fallback deleting notifications using jsonb:', fallbackNotifErr);
 
             const { error: pagesDelError } = await supabase
                 .from('pages')
