@@ -18,5 +18,4 @@ dist/
 
 # Screenshots / reports (generated output only — NOT source JS files)
 screenshots/
-*.pdf
 backend/reports/*.png
