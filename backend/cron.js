@@ -58,38 +58,69 @@ export async function runCleanupJob() {
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - 7);
         const cutoffIso = cutoffDate.toISOString();
+        console.log('[CRON] Cutoff Date calculated as:', cutoffDate);
 
-        // 2. Fetch Free users
-        const { data: freeProfiles, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('plan', 'free');
+        // 2. Fetch Free users (Handle > 1000 rows with pagination)
+        let freeUserIds = [];
+        let hasMore = true;
+        let pOffset = 0;
+        const pLimit = 1000;
 
-        if (profilesError) {
-            console.error('[CRON] Error fetching free profiles:', profilesError);
-            return;
+        while (hasMore) {
+            const { data: pageProfiles, error: profilesError } = await supabase
+                .from('profiles')
+                .select('id')
+                .or('plan.eq.free,plan.eq.Free,plan.is.null') // Catch edge cases
+                .range(pOffset, pOffset + pLimit - 1);
+
+            if (profilesError) {
+                console.error('[CRON] Error fetching free profiles at offset', pOffset, ':', profilesError);
+                return;
+            }
+
+            if (pageProfiles && pageProfiles.length > 0) {
+                freeUserIds = freeUserIds.concat(pageProfiles.map(p => p.id));
+                pOffset += pLimit;
+                if (pageProfiles.length < pLimit) hasMore = false;
+            } else {
+                hasMore = false;
+            }
         }
 
-        const freeUserIds = freeProfiles.map(p => p.id);
+        console.log('[CRON] Total Free Users Found:', freeUserIds.length);
+
         if (freeUserIds.length === 0) {
             console.log('[CRON] No Free users found, skipping.');
             return;
         }
 
         // 3. Find projects belonging to Free users that are older than 7 days
-        // We use 'in' to match user IDs and 'lt' for created_at
-        const { data: oldProjects, error: projectsError } = await supabase
-            .from('projects')
-            .select('id')
-            .in('user_id', freeUserIds)
-            .lt('created_at', cutoffIso);
+        // Chunk user IDs to prevent PostgREST URL length errors
+        const chunkSize = 200;
+        let oldProjects = [];
 
-        if (projectsError) {
-            console.error('[CRON] Error fetching old projects:', projectsError);
-            return;
+        for (let i = 0; i < freeUserIds.length; i += chunkSize) {
+            const userChunk = freeUserIds.slice(i, i + chunkSize);
+
+            const { data: chunkProjects, error: projectsError } = await supabase
+                .from('projects')
+                .select('id')
+                .in('user_id', userChunk)
+                .lt('created_at', cutoffIso);
+
+            if (projectsError) {
+                console.error(`[CRON] Error fetching old projects for chunk ${i}:`, projectsError);
+                return;
+            }
+
+            if (chunkProjects) {
+                oldProjects = oldProjects.concat(chunkProjects);
+            }
         }
 
-        if (!oldProjects || oldProjects.length === 0) {
+        console.log('[CRON] Total Old Projects Found across all chunks:', oldProjects.length);
+
+        if (oldProjects.length === 0) {
             console.log(`[CRON] No projects older than 7 days found for Free users.`);
             return;
         }
