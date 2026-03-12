@@ -8,8 +8,13 @@ import checkoutRouter from "./api/checkout.js";
 import webhooksRouter from "./api/webhooks.js";
 import dotenv from "dotenv";
 
+
 // Load environment variables from root
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+
+// Import background jobs after env vars are loaded
+import { runCleanupJob } from './cron.js';
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,6 +59,17 @@ app.get("/", (req, res) => {
 
 app.get("/health", (req, res) => {
     res.status(200).json({ status: "ok" });
+});
+
+app.get("/api/trigger-cleanup", async (req, res) => {
+    if (req.query.secret !== 'force-clean') {
+        return res.status(403).send('Unauthorized');
+    }
+    
+    // Run the job asynchronously without blocking the response
+    runCleanupJob().catch(err => console.error('Error in manual cleanup trigger:', err));
+    
+    res.json({ message: "Cleanup job executed successfully. Check server logs for details." });
 });
 
 // Routes

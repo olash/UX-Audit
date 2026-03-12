@@ -188,6 +188,7 @@ export async function finalizeProject(projectId) {
                 type: 'audit_completed',
                 title: 'Audit Completed',
                 meta: {
+                    project_id: projectId, // Embedded for cascading deletes
                     website: projectUser.target_url, // Assuming we fetched it? Wait, we need to fetch target_url or pass it.
                     // projectUser only has user_id, metadata... we need more fields.
                     // We can assume we have it or fetch it.
