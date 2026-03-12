@@ -23,21 +23,27 @@ export async function runCleanupJob() {
                 const orphanPageIds = orphanPages.map(p => p.id);
 
                 // Step C: Delete child records attached to these orphaned pages
-                await supabase.from('ai_reviews').delete().in('page_id', orphanPageIds).catch(err => console.error('[CRON] Error sweeping ai_reviews:', err));
-                await supabase.from('ux_issues').delete().in('page_id', orphanPageIds).catch(err => console.error('[CRON] Error sweeping ux_issues (page_id null):', err));
+                const { error: aiRevErr } = await supabase.from('ai_reviews').delete().in('page_id', orphanPageIds);
+                if (aiRevErr) console.error('[CRON] Error sweeping ai_reviews:', aiRevErr);
+
+                const { error: uxIssErr } = await supabase.from('ux_issues').delete().in('page_id', orphanPageIds);
+                if (uxIssErr) console.error('[CRON] Error sweeping ux_issues (page_id null):', uxIssErr);
 
                 // Step D: Delete the orphaned pages themselves
-                await supabase.from('pages').delete().is('project_id', null).catch(err => console.error('[CRON] Error sweeping pages:', err));
+                const { error: pagesErr } = await supabase.from('pages').delete().is('project_id', null);
+                if (pagesErr) console.error('[CRON] Error sweeping pages:', pagesErr);
             } else {
                 // Just in case, try deleting orphaned pages if fetching failed somehow or no pages but we want to be sure
-                await supabase.from('pages').delete().is('project_id', null).catch(err => console.error('[CRON] Error sweeping pages fallback:', err));
+                const { error: fbPagesErr } = await supabase.from('pages').delete().is('project_id', null);
+                if (fbPagesErr) console.error('[CRON] Error sweeping pages fallback:', fbPagesErr);
             }
 
-            // Step E: Sweep remaining parent-linked tables where project_id null (wrap in try/catch internally or use catch)
-            await supabase.from('reports').delete().is('project_id', null).catch(err => {
-                if (err.code !== '42P01') console.error('[CRON] Error sweeping reports db:', err);
-            });
-            await supabase.from('notifications').delete().is('project_id', null).catch(err => console.error('[CRON] Error sweeping notifications:', err));
+            // Step E: Sweep remaining parent-linked tables where project_id null
+            const { error: repErr } = await supabase.from('reports').delete().is('project_id', null);
+            if (repErr && repErr.code !== '42P01') console.error('[CRON] Error sweeping reports db:', repErr);
+
+            const { error: notifErr } = await supabase.from('notifications').delete().is('project_id', null);
+            if (notifErr) console.error('[CRON] Error sweeping notifications:', notifErr);
 
         } catch (sweepError) {
             console.error('[CRON] Critical error during orphan sweep:', sweepError);
@@ -153,16 +159,19 @@ export async function runCleanupJob() {
             if (uxIssuesDelError) console.error('[CRON] Error deleting ux_issues:', uxIssuesDelError);
 
             // Delete from ux_issues (by project_id, if schema supports it)
-            await supabase.from('ux_issues').delete().in('project_id', projectIds).catch(() => { });
+            const { error: uxProjErr } = await supabase.from('ux_issues').delete().in('project_id', projectIds);
+            if (uxProjErr) console.error('[CRON] Error fallback deleting ux_issues by project_id:', uxProjErr);
 
             // Delete from project_issues (REMOVED - It is a view, not a table)
-            // await supabase.from('project_issues').delete().in('project_id', projectIds).catch(() => {});
+            // await supabase.from('project_issues').delete().in('project_id', projectIds);
 
             // Delete from reports (database table)
-            await supabase.from('reports').delete().in('project_id', projectIds).catch(() => { });
+            const { error: repProjErr } = await supabase.from('reports').delete().in('project_id', projectIds);
+            if (repProjErr) console.error('[CRON] Error fallback deleting reports by project_id:', repProjErr);
 
             // Delete from notifications
-            await supabase.from('notifications').delete().in('project_id', projectIds).catch(() => { });
+            const { error: notifProjErr } = await supabase.from('notifications').delete().in('project_id', projectIds);
+            if (notifProjErr) console.error('[CRON] Error deleting notifications by project_id:', notifProjErr);
 
             // Delete from pages
             const { error: pagesDelError } = await supabase
@@ -172,10 +181,16 @@ export async function runCleanupJob() {
             if (pagesDelError) console.error('[CRON] Error deleting pages:', pagesDelError);
         } else {
             // No pages found, but we should still attempt to delete from parent-linked tables just in case
-            await supabase.from('ux_issues').delete().in('project_id', projectIds).catch(() => { });
-            // await supabase.from('project_issues').delete().in('project_id', projectIds).catch(() => {}); (REMOVED - View)
-            await supabase.from('reports').delete().in('project_id', projectIds).catch(() => { });
-            await supabase.from('notifications').delete().in('project_id', projectIds).catch(() => { });
+            const { error: fallbackUxErr } = await supabase.from('ux_issues').delete().in('project_id', projectIds);
+            if (fallbackUxErr) console.error('[CRON] Error fallback deleting ux_issues:', fallbackUxErr);
+
+            // await supabase.from('project_issues').delete().in('project_id', projectIds); (REMOVED - View)
+
+            const { error: fallbackRepErr } = await supabase.from('reports').delete().in('project_id', projectIds);
+            if (fallbackRepErr) console.error('[CRON] Error fallback deleting reports:', fallbackRepErr);
+
+            const { error: fallbackNotifErr } = await supabase.from('notifications').delete().in('project_id', projectIds);
+            if (fallbackNotifErr) console.error('[CRON] Error fallback deleting notifications:', fallbackNotifErr);
 
             const { error: pagesDelError } = await supabase
                 .from('pages')
