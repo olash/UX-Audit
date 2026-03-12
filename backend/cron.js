@@ -21,11 +21,11 @@ export async function runCleanupJob() {
             } else if (orphanPages && orphanPages.length > 0) {
                 // Step B: Extract IDs
                 const orphanPageIds = orphanPages.map(p => p.id);
-                
+
                 // Step C: Delete child records attached to these orphaned pages
                 await supabase.from('ai_reviews').delete().in('page_id', orphanPageIds).catch(err => console.error('[CRON] Error sweeping ai_reviews:', err));
                 await supabase.from('ux_issues').delete().in('page_id', orphanPageIds).catch(err => console.error('[CRON] Error sweeping ux_issues (page_id null):', err));
-                
+
                 // Step D: Delete the orphaned pages themselves
                 await supabase.from('pages').delete().is('project_id', null).catch(err => console.error('[CRON] Error sweeping pages:', err));
             } else {
@@ -126,44 +126,44 @@ export async function runCleanupJob() {
         }
 
         // 5. Database Cleanup - Delete child tables first to avoid foreign key violations
-        
+
         // Find all pages for these projects
         const { data: pages, error: pagesFetchError } = await supabase
             .from('pages')
             .select('id')
             .in('project_id', projectIds);
-            
+
         if (pagesFetchError) {
             console.error('[CRON] Error fetching pages for projects:', pagesFetchError);
         } else if (pages && pages.length > 0) {
             const pageIds = pages.map(p => p.id);
-            
+
             // Delete from ai_reviews
             const { error: aiReviewsDelError } = await supabase
                 .from('ai_reviews')
                 .delete()
                 .in('page_id', pageIds);
             if (aiReviewsDelError) console.error('[CRON] Error deleting ai_reviews:', aiReviewsDelError);
-            
+
             // Delete from ux_issues (by page_id first)
             const { error: uxIssuesDelError } = await supabase
                 .from('ux_issues')
                 .delete()
                 .in('page_id', pageIds);
             if (uxIssuesDelError) console.error('[CRON] Error deleting ux_issues:', uxIssuesDelError);
-            
+
             // Delete from ux_issues (by project_id, if schema supports it)
-            await supabase.from('ux_issues').delete().in('project_id', projectIds).catch(() => {});
-            
+            await supabase.from('ux_issues').delete().in('project_id', projectIds).catch(() => { });
+
             // Delete from project_issues (REMOVED - It is a view, not a table)
             // await supabase.from('project_issues').delete().in('project_id', projectIds).catch(() => {});
-            
+
             // Delete from reports (database table)
-            await supabase.from('reports').delete().in('project_id', projectIds).catch(() => {});
-            
+            await supabase.from('reports').delete().in('project_id', projectIds).catch(() => { });
+
             // Delete from notifications
-            await supabase.from('notifications').delete().in('project_id', projectIds).catch(() => {});
-            
+            await supabase.from('notifications').delete().in('project_id', projectIds).catch(() => { });
+
             // Delete from pages
             const { error: pagesDelError } = await supabase
                 .from('pages')
@@ -172,10 +172,10 @@ export async function runCleanupJob() {
             if (pagesDelError) console.error('[CRON] Error deleting pages:', pagesDelError);
         } else {
             // No pages found, but we should still attempt to delete from parent-linked tables just in case
-            await supabase.from('ux_issues').delete().in('project_id', projectIds).catch(() => {});
+            await supabase.from('ux_issues').delete().in('project_id', projectIds).catch(() => { });
             // await supabase.from('project_issues').delete().in('project_id', projectIds).catch(() => {}); (REMOVED - View)
-            await supabase.from('reports').delete().in('project_id', projectIds).catch(() => {});
-            await supabase.from('notifications').delete().in('project_id', projectIds).catch(() => {});
+            await supabase.from('reports').delete().in('project_id', projectIds).catch(() => { });
+            await supabase.from('notifications').delete().in('project_id', projectIds).catch(() => { });
 
             const { error: pagesDelError } = await supabase
                 .from('pages')
