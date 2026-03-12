@@ -1,17 +1,11 @@
 import { Resend } from 'resend';
 
-// Initialize Resend lazily so environment variables are loaded first
-let resendInstance = null;
-const getResend = () => {
-    if (!resendInstance) {
-        resendInstance = new Resend(process.env.RESEND_API_KEY);
-    }
-    return resendInstance;
-};
+// Initialize Resend with your environment variable
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendAuditCompleteEmail(toEmail, reportUrl) {
     try {
-        const data = await getResend().emails.send({
+        const data = await resend.emails.send({
             from: 'Abdurrahman at UX Audit <hello@tryuxaudit.com>', // Change to custom domain later
             to: [toEmail],
             subject: 'Your UX Audit Report is Ready! 🎉',
@@ -32,7 +26,7 @@ export async function sendAuditCompleteEmail(toEmail, reportUrl) {
 
 export async function sendWelcomeEmail(toEmail) {
     try {
-        const data = await getResend().emails.send({
+        const data = await resend.emails.send({
             from: 'Abdurrahman at UX Audit <hello@tryuxaudit.com>', // Update when you add a custom domain
             to: [toEmail],
             subject: 'Welcome to UX Audit! 🎉',
@@ -88,7 +82,7 @@ export const sendLeadMagnetEmail = async (email, source) => {
             </div>
         `;
 
-        const data = await getResend().emails.send({
+        const data = await resend.emails.send({
             from: 'Abdurrahman at UX Audit <hello@tryuxaudit.com>',
             to: email,
             subject: `Your ${companyName} 15-Page UX Audit PDF 📄`,
