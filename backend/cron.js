@@ -6,6 +6,19 @@ export async function runCleanupJob() {
     console.log('[CRON] Starting cleanup of old Free plan audits...');
 
     try {
+        // 0. ORPHAN SWEEP: Clean up any lingering data where parent FK is null, from incomplete runs
+        // Moved to the top so it ALWAYS executes before any early returns.
+        console.log('[CRON] Performing orphan sweep on child tables...');
+        const sweeps = [
+            supabase.from('ai_reviews').delete().is('page_id', null).then(r => r.error && console.error('[CRON] Error sweeping ai_reviews:', r.error)),
+            supabase.from('ux_issues').delete().is('page_id', null).then(r => r.error && console.error('[CRON] Error sweeping ux_issues (page_id null):', r.error)),
+            supabase.from('project_issues').delete().is('project_id', null).then(r => r.error && r.error.code !== '42P01' && console.error('[CRON] Error sweeping project_issues:', r.error)),
+            supabase.from('reports').delete().is('project_id', null).then(r => r.error && r.error.code !== '42P01' && console.error('[CRON] Error sweeping reports db:', r.error)),
+            supabase.from('pages').delete().is('project_id', null).then(r => r.error && console.error('[CRON] Error sweeping pages:', r.error))
+        ];
+        await Promise.allSettled(sweeps);
+        console.log('[CRON] Orphan sweep completed.');
+
         // 1. Calculate the cutoff date (7 days ago)
         const cutoffDate = new Date();
         cutoffDate.setDate(cutoffDate.getDate() - 7);
@@ -158,18 +171,6 @@ export async function runCleanupJob() {
             console.log(`[CRON] ✅ Successfully deleted ${projectIds.length} projects from database.`);
             console.log(`[CRON] ✅ Cleaned up ${deletedScreenshotsCount} screenshots and ${deletedReportsCount} reports from Storage.`);
         }
-        
-        // 7. ORPHAN SWEEP: Clean up any lingering data where parent FK is null, from incomplete runs
-        console.log('[CRON] Performing orphan sweep on child tables...');
-        const sweeps = [
-            supabase.from('ai_reviews').delete().is('page_id', null).then(r => r.error && console.error('[CRON] Error sweeping ai_reviews:', r.error)),
-            supabase.from('ux_issues').delete().is('page_id', null).then(r => r.error && console.error('[CRON] Error sweeping ux_issues (page_id null):', r.error)),
-            supabase.from('project_issues').delete().is('project_id', null).then(r => r.error && r.error.code !== '42P01' && console.error('[CRON] Error sweeping project_issues:', r.error)),
-            supabase.from('reports').delete().is('project_id', null).then(r => r.error && r.error.code !== '42P01' && console.error('[CRON] Error sweeping reports db:', r.error)),
-            supabase.from('pages').delete().is('project_id', null).then(r => r.error && console.error('[CRON] Error sweeping pages:', r.error))
-        ];
-        await Promise.allSettled(sweeps);
-        console.log('[CRON] Orphan sweep completed.');
 
     } catch (error) {
         console.error('[CRON] Unknown error during cleanup:', error);
