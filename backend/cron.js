@@ -2,7 +2,7 @@ import cron from 'node-cron';
 import { supabase } from './db/supabase.js';
 
 // Run every day at midnight (0 0 * * *)
-cron.schedule('0 0 * * *', async () => {
+export async function runCleanupJob() {
     console.log('[CRON] Starting cleanup of old Free plan audits...');
 
     try {
@@ -147,4 +147,7 @@ cron.schedule('0 0 * * *', async () => {
     } catch (error) {
         console.error('[CRON] Unknown error during cleanup:', error);
     }
-});
+}
+
+// Run every day at midnight (0 0 * * *)
+cron.schedule('0 0 * * *', runCleanupJob);
