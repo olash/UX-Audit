@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="../assets/images/favicon.png">
+    <title>UX Audit Labs - Product Building & Development</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/3/3.1.1/iconify.min.js"></script>
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        slate: { 850: '#1e293b', 950: '#020617' }
+                    },
+                    animation: {
+                        'bounce-subtle': 'bounce-subtle 2s infinite',
+                    },
+                    keyframes: {
+                        'bounce-subtle': {
+                            '0%, 100%': { transform: 'translateY(-5%)', animationTimingFunction: 'cubic-bezier(0.8,0,1,1)' },
+                            '50%': { transform: 'none', animationTimingFunction: 'cubic-bezier(0,0,0.2,1)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { -webkit-font-smoothing: antialiased; }
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans selection:bg-slate-900 selection:text-white pt-16">
+
+    <!-- NAVIGATION -->
+    <nav class="fixed top-0 w-full z-50 border-b border-slate-200 glass">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <a href="/pages/index.html" class="logo flex items-center gap-2">
+                    <img src="../assets/images/logo.png" alt="UX Audit" class="h-10 w-auto">
+                </a>
+                <nav class="hidden md:flex items-center gap-8">
+                    <a href="/pages/Pricing.html" class="text-sm font-medium text-slate-600 hover:text-slate-900">Pricing</a>
+                    <a href="/pages/blog.html" class="text-sm font-medium text-slate-600 hover:text-slate-900">Blog</a>
+                    <a href="/pages/Labs.html" class="text-sm font-medium text-slate-900">Labs</a>
+                    <a href="/pages/Community.html" target="_blank" class="text-sm font-medium text-slate-600 hover:text-slate-900">Community</a>
+                </nav>
+                <div class="hidden md:flex items-center gap-4">
+                    <a href="Login.html" class="text-sm font-medium text-slate-600 hover:text-slate-900">Sign in</a>
+                    <a href="Signup.html" class="inline-flex items-center justify-center rounded-lg text-sm font-medium bg-slate-900 text-white hover:bg-slate-900/90 h-9 px-4 py-2 transition-colors">
+                        Get Started
+                    </a>
+                </div>
+                <button id="menuToggle" class="md:hidden p-2 text-slate-600">
+                    <span class="iconify" data-icon="lucide:menu" data-width="24"></span>
+                </button>
+            </div>
+            <!-- Mobile Menu -->
+            <div id="mobileMenu" class="hidden absolute top-16 left-0 w-full bg-white border-b border-slate-200 p-4 shadow-lg z-50">
+                <nav class="flex flex-col gap-4">
+                    <a href="/pages/Pricing.html" class="text-sm font-medium text-slate-600 hover:text-slate-900">Pricing</a>
+                    <a href="/pages/blog.html" class="text-sm font-medium text-slate-600 hover:text-slate-900">Blog</a>
+                    <a href="/pages/Labs.html" class="text-sm font-medium text-slate-900">Labs</a>
+                    <a href="/pages/Community.html" target="_blank" class="text-sm font-medium text-slate-600 hover:text-slate-900">Community</a>
+                    <hr class="border-slate-100">
+                    <a href="Login.html" class="text-sm font-medium text-slate-600 hover:text-slate-900">Sign in</a>
+                    <a href="Signup.html" class="inline-flex justify-center rounded-lg text-sm font-medium bg-slate-900 text-white hover:bg-slate-900/90 h-9 px-4 py-2">
+                        Get Started
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </nav>
+    
+    <main>
+        <!-- Hero Section -->
+        <section class="relative pt-24 pb-20 lg:pt-32 lg:pb-28 overflow-hidden text-center px-4 max-w-4xl mx-auto">
+            <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900 mb-6">
+                We don't just audit products.<br><span class="text-blue-600">We build them.</span>
+            </h1>
+            <p class="text-lg text-slate-600 mb-10 leading-relaxed max-w-2xl mx-auto">
+                From high-converting e-commerce landing pages to complex full-stack SaaS platforms. Get product-designer-led development (Code or No-Code) tailored to your exact revenue goals.
+            </p>
+            <a href="https://calendly.com/damilolash/consultation-meeting-with-ux-audit" target="_blank" 
+               class="inline-block bg-slate-900 text-white font-medium text-lg px-8 py-4 rounded-lg hover:bg-slate-800 transition-colors shadow-lg animate-bounce-subtle">
+                Book a Free Discovery Call
+            </a>
+        </section>
+
+        <!-- Services Section -->
+        <section class="py-20 bg-white px-4 border-y border-slate-200">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold text-slate-900 mb-4">Our Expertise</h2>
+                    <p class="text-slate-600 max-w-2xl mx-auto">End-to-end solutions built with performance and user experience as the core foundation.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Service 1 -->
+                    <div class="bg-slate-50 p-8 rounded-2xl border border-slate-100 hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+                        <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mb-6">
+                            <span class="iconify" data-icon="lucide:code-2" data-width="24"></span>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-3">Full-Stack Development</h3>
+                        <p class="text-slate-600 leading-relaxed">Robust, scalable SaaS platforms and web applications built with modern frameworks and best practices.</p>
+                    </div>
+                    <!-- Service 2 -->
+                    <div class="bg-slate-50 p-8 rounded-2xl border border-slate-100 hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+                        <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-lg flex items-center justify-center mb-6">
+                            <span class="iconify" data-icon="lucide:layout-template" data-width="24"></span>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-3">High-Converting Landing Pages</h3>
+                        <p class="text-slate-600 leading-relaxed">E-commerce frontends and marketing pages meticulously crafted to maximize conversions and speed.</p>
+                    </div>
+                    <!-- Service 3 -->
+                    <div class="bg-slate-50 p-8 rounded-2xl border border-slate-100 hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+                        <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-lg flex items-center justify-center mb-6">
+                            <span class="iconify" data-icon="lucide:sparkles" data-width="24"></span>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-900 mb-3">No-Code MVPs</h3>
+                        <p class="text-slate-600 leading-relaxed">Launch your idea in weeks, not months. Powerful no-code builds to validate and scale your business fast.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Portfolio Section -->
+        <section class="py-24 bg-slate-50 px-4">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl font-bold text-slate-900 mb-4">Selected Work</h2>
+                    <p class="text-slate-600 max-w-2xl mx-auto">A glimpse into products we've transformed through strategic design and development.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Project 1 -->
+                    <div class="relative group rounded-2xl overflow-hidden shadow-sm bg-white border border-slate-200">
+                        <div class="aspect-video bg-slate-100 w-full relative">
+                            <!-- Dummy Image Placeholder, replace src if a real one exists -->
+                            <img src="../assets/images/dummy_screenshot.png" alt="SaaS Platform Redesign" class="w-full h-full object-cover">
+                        </div>
+                        <div class="absolute inset-0 bg-slate-900/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center p-6">
+                            <h3 class="text-2xl font-bold text-white mb-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">SaaS Platform Redesign</h3>
+                            <p class="text-slate-200 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">Complete UX overhaul and frontend rebuild.</p>
+                        </div>
+                    </div>
+                    <!-- Project 2 -->
+                    <div class="relative group rounded-2xl overflow-hidden shadow-sm bg-white border border-slate-200">
+                        <div class="aspect-video bg-slate-100 w-full relative">
+                            <img src="../assets/images/dummy_screenshot.png" alt="High-Converting Checkouts" class="w-full h-full object-cover">
+                        </div>
+                        <div class="absolute inset-0 bg-slate-900/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-center items-center text-center p-6">
+                            <h3 class="text-2xl font-bold text-white mb-2 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">High-Converting E-commerce Checkout</h3>
+                            <p class="text-slate-200 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 delay-75">Optimized flow reducing cart abandonment by 35%.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Process & Pricing Section -->
+        <section class="py-20 bg-white px-4 border-t border-slate-200">
+            <div class="max-w-4xl mx-auto text-center">
+                <h2 class="text-3xl font-bold text-slate-900 mb-6">Our Process & Pricing</h2>
+                <div class="inline-block bg-slate-100 text-slate-800 px-4 py-2 rounded-full font-medium mb-12 border border-slate-200">
+                    Custom scopes and quotes for every project.
+                </div>
+                
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 text-left">
+                    <div class="relative">
+                        <div class="text-4xl font-black text-slate-100 absolute -top-4 -left-2 -z-10 select-none">1</div>
+                        <h4 class="font-bold text-slate-900 mb-2">Discovery Call</h4>
+                        <p class="text-sm text-slate-600">We align on your revenue goals, features, and timeline.</p>
+                    </div>
+                    <div class="relative">
+                        <div class="text-4xl font-black text-slate-100 absolute -top-4 -left-2 -z-10 select-none">2</div>
+                        <h4 class="font-bold text-slate-900 mb-2">UX/Architecture</h4>
+                        <p class="text-sm text-slate-600">Wireframes, logic, and foundation mapping by product experts.</p>
+                    </div>
+                    <div class="relative">
+                        <div class="text-4xl font-black text-slate-100 absolute -top-4 -left-2 -z-10 select-none">3</div>
+                        <h4 class="font-bold text-slate-900 mb-2">Development</h4>
+                        <p class="text-sm text-slate-600">Pixel-perfect engineering using Code or No-Code tools.</p>
+                    </div>
+                    <div class="relative">
+                        <div class="text-4xl font-black text-slate-100 absolute -top-4 -left-2 -z-10 select-none">4</div>
+                        <h4 class="font-bold text-slate-900 mb-2">Launch</h4>
+                        <p class="text-sm text-slate-600">Testing, deployment, and handover to your team.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Final CTA / Calendly Widget Section -->
+        <section class="py-24 bg-slate-50 px-4 border-t border-slate-200">
+            <div class="max-w-4xl mx-auto text-center mb-10">
+                <h2 class="text-3xl font-bold text-slate-900 mb-4">Ready to build?</h2>
+                <p class="text-slate-600">Schedule your consultation below to get started on your next big project.</p>
+            </div>
+            <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden" 
+                 style="height: 700px;">
+                <!-- Calendly inline widget begin -->
+                <div class="calendly-inline-widget" data-url="https://calendly.com/damilolash/consultation-meeting-with-ux-audit" style="min-width:320px;height:100%;"></div>
+                <script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async></script>
+                <!-- Calendly inline widget end -->
+            </div>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-slate-50 border-t border-slate-200 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                <div>
+                    <a href="/pages/index.html" class="logo flex items-center gap-2 mb-4">
+                        <img src="../assets/images/logo.png" alt="UX Audit" class="h-10 w-auto">
+                    </a>
+                    <p class="text-sm text-slate-500 leading-relaxed max-w-sm">
+                        Automated, professional UX & UI auditing for modern product teams and agencies.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-sm mb-4">Product</h4>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><a href="Pricing.html" class="hover:text-slate-900">Pricing</a></li>
+                        <li><a href="Labs.html" class="hover:text-slate-900">Labs</a></li>
+                        <li><a href="Dashboard_Homepage.html" class="hover:text-slate-900">Dashboard</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-sm mb-4">Legal</h4>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><a href="Privacy.html" class="hover:text-slate-900">Privacy Policy</a></li>
+                        <li><a href="Terms.html" class="hover:text-slate-900">Terms of Service</a></li>
+                        <li><a href="Refunds.html" class="hover:text-slate-900">Refund Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-slate-200 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <p class="text-xs text-slate-400">&copy; 2026 UX Audit Platform. All rights reserved.</p>
+                <div class="flex gap-4">
+                    <a href="https://www.instagram.com/tryuxaudit/" target="_blank" aria-label="Instagram">
+                        <span class="iconify text-slate-400 hover:text-slate-600 cursor-pointer" data-icon="lucide:instagram" data-width="16"></span>
+                    </a>
+                    <a href="https://www.linkedin.com/company/try-ux-audit/" target="_blank" aria-label="LinkedIn">
+                        <span class="iconify text-slate-400 hover:text-slate-600 cursor-pointer" data-icon="lucide:linkedin" data-width="16"></span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script>
+        document.getElementById('menuToggle').addEventListener('click', function() {
+            document.getElementById('mobileMenu').classList.toggle('hidden');
+        });
+    </script>
+</body>
+</html>
